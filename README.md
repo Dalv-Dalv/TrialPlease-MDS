@@ -5,6 +5,8 @@ TrialSim AI is an interactive, AI-driven courtroom simulator where the user step
 
 The twist? The prosecution, the defense, and the underlying case are entirely generated and driven by **Agentic AI**. The user's performance is scored based on their adherence to legal logic, handling of courtroom events, and the accuracy of their final verdict compared to the hidden "truth" established by the AI.
 
+Story/idea-board: https://app.milanote.com/1W4m3912a1645p?p=ZTcL6HJ7WT8
+
 ---
 
 ## 🎮 Core Gameplay & Mechanics
