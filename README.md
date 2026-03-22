@@ -33,23 +33,3 @@ The simulator relies on a multi-agent AI architecture:
 4.  **Closing Arguments:** Both AI agents summarize their cases.
 5.  **Deliberation & Verdict:** The Judge submits their final decision.
 6.  **Post-Trial Debrief (Scoring):** The system reveals the hidden truth, grades the Judge's verdict, evaluates their rulings on objections, and displays the final score.
-
----
-
-## 👥 Team Distribution (5 Members)
-
-To successfully build this multi-agent system, here is a recommended breakdown of responsibilities for your 5-person team:
-
-* **Member 1: AI Agent Engineer (The Lawyers)** * Focuses on designing the prompts, system instructions, and logic for the Prosecutor and Defense agents.
-* **Member 2: AI Architect (Case Generation)** * Focuses on the Case Generator agent, ensuring it creates coherent, balanced cases with clear evidence and a hidden "truth" variable.
-* **Member 3: Game Logic & Scoring Developer** * Builds the backend engine that manages the turn-based flow of the trial, records the judge's actions, and calculates the final score.
-* **Member 4: Frontend Developer (UI/UX)** * Builds the interface where the user reads the dialogue, reviews evidence, and clicks buttons to make rulings and deliver verdicts.
-* **Member 5: Project Manager & Integration Lead** * Manages version control, API integrations (e.g., connecting the LLM APIs to the backend), and ensures all components work together smoothly.
-
----
-
-## 🛠️ Proposed Tech Stack
-* **AI/LLM Framework:** LangChain or Microsoft AutoGen (excellent for multi-agent conversations).
-* **Backend:** Python (FastAPI or Flask) or Node.js.
-* **Frontend:** React, Vue, or a simple web interface using Streamlit (for rapid prototyping).
-* **Database (Optional):** SQLite or PostgreSQL to save trial histories and user high scores.
