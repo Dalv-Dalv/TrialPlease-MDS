@@ -1,27 +1,27 @@
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
-
-function Box() {
-  return (
-    <mesh>
-      <boxGeometry />
-      <meshStandardMaterial color="orange" />
-    </mesh>
-  )
-}
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import MainMenu from './pages/main-menu/MainMenu'
+import Trial from './pages/trial/Trial'
+import Login from './pages/auth/login/Login'
+import Register from './pages/auth/register/Register'
+import { AuthProvider } from './store/auth'
+import { RequireAuth, RedirectIfAuthed } from './router/guards'
 
 export default function App() {
   return (
-    <Canvas>
-      {/* Lights */}
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[2, 2, 2]} />
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<RedirectIfAuthed />}>
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/register" element={<Register />} />
+          </Route>
 
-      {/* Object */}
-      <Box />
-
-      {/* Camera controls */}
-      <OrbitControls />
-    </Canvas>
+          <Route element={<RequireAuth />}>
+            <Route path="/" element={<MainMenu />} />
+            <Route path="/trial" element={<Trial />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }

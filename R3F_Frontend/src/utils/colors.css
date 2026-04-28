@@ -1,0 +1,42 @@
+:root {
+  /* Brand */
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-primary-soft: #a5b4fc;
+  --color-accent: #8b5cf6;
+
+  /* Brand glows / focus rings */
+  --color-primary-glow-soft: rgba(99, 102, 241, 0.25);
+  --color-accent-glow-soft: rgba(139, 92, 246, 0.2);
+  --color-primary-glow: rgba(99, 102, 241, 0.5);
+  --color-primary-glow-strong: rgba(99, 102, 241, 0.6);
+  --color-primary-ring: rgba(129, 140, 248, 0.15);
+
+  /* Danger */
+  --color-danger: #dc2626;
+  --color-danger-hover: #ef4444;
+  --color-danger-glow: rgba(220, 38, 38, 0.45);
+
+  /* Backgrounds */
+  --color-bg: #0a0a0f;
+
+  /* Translucent surfaces (layered on dark bg) */
+  --color-surface-1: rgba(255, 255, 255, 0.03);
+  --color-surface-2: rgba(255, 255, 255, 0.04);
+  --color-surface-3: rgba(255, 255, 255, 0.05);
+
+  /* Borders */
+  --color-border: rgba(255, 255, 255, 0.08);
+
+  /* Shadows */
+  --color-shadow: rgba(0, 0, 0, 0.5);
+
+  /* Text scale (light-on-dark) */
+  --color-text-strong: #f9fafb;
+  --color-text: #e5e7eb;
+  --color-text-input: #f3f4f6;
+  --color-text-muted: #d1d5db;
+  --color-text-secondary: #9ca3af;
+  --color-text-subtle: #6b7280;
+  --color-text-faint: #4b5563;
+}
