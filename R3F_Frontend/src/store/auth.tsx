@@ -20,8 +20,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem(STORAGE_KEY)
   }, [user])
 
-  const login = useCallback((email: string) => setUser({ email }), [])
-  const register = useCallback((email: string) => setUser({ email }), [])
+  const login = useCallback(async (username: string, password: string) => {
+    const res = await fetch('http://localhost:8000/api/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    })
+    
+    if (!res.ok) {
+      throw new Error('Login failed. Please check your credentials.')
+    }
+    
+    const data = await res.json()
+    setUser({ username, token: data.token })
+  }, [])
+
+  const register = useCallback(async (username: string, password: string) => {
+    // For now, registration is not implemented on the backend.
+    throw new Error('Registration not implemented yet.')
+  }, [])
+
   const logout = useCallback(() => setUser(null), [])
 
   const value = useMemo<AuthContextValue>(

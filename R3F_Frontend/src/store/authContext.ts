@@ -1,14 +1,15 @@
 import { createContext, useContext } from 'react'
 
 export type User = {
-  email: string
+  username: string
+  token: string
 }
 
 export type AuthContextValue = {
   user: User | null
   isAuthenticated: boolean
-  login: (email: string) => void
-  register: (email: string) => void
+  login: (username: string, password: string) => Promise<void>
+  register: (username: string, password: string) => Promise<void>
   logout: () => void
 }
 
