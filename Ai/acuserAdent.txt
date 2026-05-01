@@ -6,8 +6,8 @@ The JSON structure must be as follows:
 {
 "Descriptions": "A short and authoritative statement highlighting the gravity of the act",
 "principal_arguments": [
-"Reason 1 why the accused is guilty",
-"Reason 2 why the accused is guilty"
+    "Reason 1 why the accused is guilty",
+    "Reason 2 why the accused is guilty"
 ],
 "evidences": [
     {"dovada_vizata": "Name of the evidence from the case", "explicatie_incriminatorie": "How this evidence directly links the accused to the act"}

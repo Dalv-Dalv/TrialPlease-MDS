@@ -11,9 +11,9 @@ json structure must be the following
   "victim": "The name and a brief description of the victim/plaintiff",
   "charges": ["Charge 1", "Charge 2"],
   "evidence": [
-  {"name": "Evidence 1", "description": "Description of the evidence"}
+    {"name": "Evidence 1", "description": "Description of the evidence"}
   ],
   "witnesses": [
-  {"name": "Witness 1", "role": "e.g., Eyewitness", "summary_statement": "What they saw/heard"}
+    {"name": "Witness 1", "role": "e.g., Eyewitness", "summary_statement": "What they saw/heard"}
   ]
 }   
