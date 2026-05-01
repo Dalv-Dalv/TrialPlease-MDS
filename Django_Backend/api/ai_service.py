@@ -12,7 +12,8 @@ def genereaza_caz_cu_ai():
     client = genai.Client(api_key=API_KEY)
     
     prompt = '''
-You are a professional paralegal and scenario architect for a courtroom simulation game. Your task is to create a complex and balanced fictional court case that allows for arguments for both the defense and the prosecution.
+You are a professional paralegal and scenario architect for a courtroom simulation game. Your task is to create a complex and balanced, but fun, fictional court case that allows for arguments for both the defense and the prosecution.
+The court case should be fun and interesting.
 You must generate the case details and respond STRICTLY with a valid JSON object. 
 
 The JSON structure MUST be exactly the following:
