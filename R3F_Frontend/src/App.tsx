@@ -1,27 +1,43 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import MainMenu from './pages/main-menu/MainMenu'
-import Trial from './pages/trial/Trial'
-import Login from './pages/auth/login/Login'
-import Register from './pages/auth/register/Register'
-import { AuthProvider } from './store/auth'
-import { RequireAuth, RedirectIfAuthed } from './router/guards'
+import { Canvas } from '@react-three/fiber'
+import { TrialScene } from './pages/trial/scene/TrialScene'
+import { FlyCamera } from './pages/trial/components/FlyCamera' // adjust path as needed
+import { EffectComposer, Bloom, Vignette, Noise, ToneMapping } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<RedirectIfAuthed />}>
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
-          </Route>
+    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
 
-          <Route element={<RequireAuth />}>
-            <Route path="/" element={<MainMenu />} />
-            <Route path="/trial" element={<Trial />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      {/* A tiny dot in the center of the screen like a crosshair */}
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        width: 4,
+        height: 4,
+        background: 'white',
+        borderRadius: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 10,
+        pointerEvents: 'none',
+        mixBlendMode: 'difference'
+      }} />
+
+      <Canvas gl={{ antialias: false }} camera={{ position: [0, 1.6, 5], fov: 90 }} frameloop="always">
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[10, 10, 5]} intensity={18.5} rotation={[-0.5607, 0.1024, -1.1726]} color={[1, 0.4, 0.3]} />
+
+        <TrialScene />
+
+        <FlyCamera />
+
+        <EffectComposer disableNormalPass>
+          <Bloom luminanceThreshold={0.95} luminanceSmoothing={.625} />
+          <Noise opacity={0.03} />
+          {/* <Vignette eskil={false} offset={0.1} darkness={1.1} /> */}
+          <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+        </EffectComposer>
+      </Canvas>
+    </div>
   )
 }
