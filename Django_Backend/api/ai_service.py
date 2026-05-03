@@ -21,8 +21,8 @@ The JSON structure MUST be exactly the following:
   "case_name": "The official title of the case",
   "case_type": "Criminal or Civil",
   "case_description": "An objective summary of the events",
-  "defendant": "The name and a brief description of the accused person",
-  "victim": "The name and a brief description of the victim/plaintiff",
+  "defendant": "NAME: brief description of the accused person",
+  "victim": "NAME: brief description of the victim/plaintiff",
   "correct_verdict": "what is the correct verdict",
   "possible_choices": [
      {"verdict_option": "Verdict Option 1", "score_points": 100},

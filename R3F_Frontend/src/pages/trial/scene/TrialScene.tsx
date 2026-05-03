@@ -171,7 +171,7 @@ export function TrialScene(props: JSX.IntrinsicElements['group']) {
 					<mesh geometry={nodes.Mesh_2.geometry} material={materials.Gold} />
 				</group>
 			</mesh>
-			<mesh geometry={nodes.Judge_Desk.geometry} material={materials.Baked_Furniture} position={[0.027, 1, -2.477]} />
+			<mesh geometry={nodes.Judge_Desk.geometry} material={materials.Baked_Furniture} position={[0.0, 1, -2.477]} />
 			<mesh geometry={nodes.Clerks_Desk.geometry} material={materials.Baked_Furniture} position={[0.027, 0.275, -0.524]} />
 			<mesh geometry={nodes.Prosecution_Desk.geometry} material={materials.Baked_Furniture} position={[1.974, 0.086, 3.323]} rotation={[Math.PI, 0, Math.PI]} />
 			<mesh geometry={nodes.Gavel_StrikingPlatform.geometry} material={materials.Baked_Furniture} position={[-0.574, 1.209, -1.938]} />

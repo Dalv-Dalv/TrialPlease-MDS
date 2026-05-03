@@ -19,10 +19,13 @@ class CaseViewSet(viewsets.ModelViewSet):
             
             # 1. Preluăm cazul generat de AI (ca dicționar)
             ai_data = genereaza_caz_cu_ai()
-            
+        
             # 2. Îl trecem prin Serializator ca să validăm și să salvăm în DB
             serializer = self.get_serializer(data=ai_data)
-            
+
+            if not serializer.is_valid():
+                print("SERIALIZER ERRORS:", serializer.errors)
+
             if serializer.is_valid():
                 caz_salvat = serializer.save()
                 
