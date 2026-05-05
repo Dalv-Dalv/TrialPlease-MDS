@@ -2,34 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
-
-export interface VerdictOption {
-    verdict_option: string;
-    score_points: number;
-}
-
-export interface Evidence {
-    name: string;
-    description: string;
-}
-
-export interface Witness {
-    name: string;
-    role: string;
-    summary_statement: string;
-}
-
-export interface CaseData {
-    case_name: string;
-    case_type: string;
-    case_description: string;
-    defendant: string;
-    victim: string;
-    correct_verdict: string;
-    possible_choices: VerdictOption[];
-    evidence_items: Evidence[];
-    witnesses: Witness[];
-}
+import { useCaseGenerator } from '../../../store/case-generator-store/caseGeneratorContext';
 
 interface CaseTabletProps {
     deskPosition?: [number, number, number];
@@ -46,10 +19,8 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
     const tabletRef = useRef<THREE.Group>(null);
     const uiContainerRef = useRef<HTMLDivElement>(null);
 
+    const { caseInfo, isLoading, error, fetchCase } = useCaseGenerator();
     const [isViewing, setIsViewing] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [caseInfo, setCaseInfo] = useState<CaseData | null>(null);
-    const [error, setError] = useState<string | null>(null);
 
     const lastCloseTime = useRef<number>(0);
 
@@ -88,24 +59,6 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isViewing]);
-
-    const fetchCase = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const response = await fetch('http://127.0.0.1:8000/api/cases/generate/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
-            if (!response.ok) throw new Error('Failed to generate case');
-            const data = await response.json();
-            setCaseInfo(data.case);
-        } catch (err) {
-            setError('Failed to retrieve court records. Database unreachable.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const handleTabletClick = (e: any) => {
         e.stopPropagation();
