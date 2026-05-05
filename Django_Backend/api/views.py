@@ -22,7 +22,6 @@ class CaseViewSet(viewsets.ModelViewSet):
         
             # 2. Îl trecem prin Serializator ca să validăm și să salvăm în DB
             serializer = self.get_serializer(data=ai_data)
-
             if not serializer.is_valid():
                 print("SERIALIZER ERRORS:", serializer.errors)
 
@@ -38,4 +37,5 @@ class CaseViewSet(viewsets.ModelViewSet):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
+            print(f"EROARE LA GENERARE: {e}")   
             return Response({"error": f"Eroare la generare: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
