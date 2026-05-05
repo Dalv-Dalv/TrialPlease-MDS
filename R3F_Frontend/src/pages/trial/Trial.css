@@ -5,6 +5,20 @@
   background: var(--color-bg);
 }
 
+.trial-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  pointer-events: none;
+  mix-blend-mode: difference;
+}
+
 .trial-menu-trigger {
   position: absolute;
   top: 1.5rem;
