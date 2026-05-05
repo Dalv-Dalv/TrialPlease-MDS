@@ -1,16 +1,17 @@
 import { Canvas, useThree } from '@react-three/fiber'
 import { TrialScene } from './pages/trial/scene/TrialScene'
-import { FlyCamera } from './pages/trial/components/FlyCamera' // adjust path as needed
-import { EffectComposer, Bloom, Vignette, Noise, ToneMapping } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Noise, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { CaseTablet } from './pages/trial/components/CaseFile'
 import { OrbitControls, PointerLockControls } from '@react-three/drei'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { CaseGeneratorProvider } from './store/case-generator-store/caseGeneratorStore'
 
 export default function App() {
   const [isTabletOpen, setIsTabletOpen] = useState(false);
 
   return (
+    <CaseGeneratorProvider>
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
 
       {/* A tiny dot in the center of the screen like a crosshair */}
@@ -49,5 +50,6 @@ export default function App() {
         </EffectComposer>
       </Canvas>
     </div>
+    </CaseGeneratorProvider>
   )
 }
