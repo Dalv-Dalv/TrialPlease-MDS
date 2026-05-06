@@ -28,7 +28,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: var(--color-surface-2);
+  /* background: var(--color-surface-2); */
   border: 1px solid var(--color-border);
   border-radius: 8px;
   color: var(--color-text);
@@ -36,6 +36,7 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   transition: background 150ms, border-color 150ms, transform 80ms;
+  background: var(--color-surface-dark-transparent);
 }
 
 .trial-menu-trigger:hover {
