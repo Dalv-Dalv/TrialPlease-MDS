@@ -310,8 +310,8 @@ const TEXT_BODY = '#c4c0b4';
 const styles: { [key: string]: React.CSSProperties } = {
 
     document: {
-        width: '840px',
-        height: '1160px',
+        width: '858px',
+        height: '1188px',
         background: BG,
         color: TEXT,
         fontFamily: '"Crimson Pro", Georgia, serif',
