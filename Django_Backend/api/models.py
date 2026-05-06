@@ -10,6 +10,10 @@ class Case(models.Model): # <-- Aici era greșeala (models.Model în loc de mode
     case_type = models.CharField(max_length=100)
     case_description = models.TextField()
     
+    # Nou: split the truth
+    police_report = models.TextField(null=True, blank=True)
+    absolute_truth = models.TextField(null=True, blank=True)
+    
     # Detalii despre inculpat și victimă
     defendant = models.TextField()
     victim = models.TextField()
@@ -55,6 +59,7 @@ class Witness(models.Model):
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=150)
     summary_statement = models.TextField()
+    hidden_truth = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} ({self.role})"
