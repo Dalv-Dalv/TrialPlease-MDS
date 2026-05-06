@@ -4,6 +4,8 @@ import {
   type CaseData,
   type CaseGeneratorContextValue,
 } from './caseGeneratorContext'
+// TODO: replace mock with real backend call once the case-generation API is wired up.
+import { MOCK_CASE } from '../../test/flow'
 
 export function CaseGeneratorProvider({ children }: { children: ReactNode }) {
   const [caseInfo, setCaseInfo] = useState<CaseData | null>(null)
@@ -13,19 +15,9 @@ export function CaseGeneratorProvider({ children }: { children: ReactNode }) {
   const fetchCase = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/cases/generate/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      if (!response.ok) throw new Error('Failed to generate case')
-      const data = await response.json()
-      setCaseInfo(data.case)
-    } catch {
-      setError('Failed to retrieve court records. Database unreachable.')
-    } finally {
-      setIsLoading(false)
-    }
+    await new Promise((r) => setTimeout(r, 500))
+    setCaseInfo(MOCK_CASE)
+    setIsLoading(false)
   }, [])
 
   const clearCase = useCallback(() => {

@@ -1,34 +1,9 @@
 import { Gavel, ShieldCheck, ShieldX, Play } from 'lucide-react'
 import { useFlow, type Side } from '../../../../store/flow-store/flowStore'
-import { useLawyers } from '../../../../store/lawyer-store/lawyerContext'
+import { useLawyers } from '../../../../store/lawyer-store/lawyerStore'
 import { useCaseGenerator } from '../../../../store/case-generator-store/caseGeneratorContext'
+import { HUD_STRINGS, phaseLabel } from '../../../../utils/strings'
 import './TrialHUD.css'
-
-function phaseLabel(
-  phase: ReturnType<typeof useFlow.getState>['phase'],
-  evidenceIndex: number | null,
-  evidenceCount: number,
-  evidenceName: string | undefined,
-): string {
-  switch (phase) {
-    case 'pre_trial':
-      return 'Court is in session — awaiting commencement'
-    case 'opening_prosecution':
-      return 'Opening Statement — Prosecution'
-    case 'opening_defense':
-      return 'Opening Statement — Defense'
-    case 'evidence_debate':
-      return `Evidence ${(evidenceIndex ?? 0) + 1} of ${evidenceCount} — "${evidenceName ?? ''}"`
-    case 'closing_prosecution':
-      return 'Closing Argument — Prosecution'
-    case 'closing_defense':
-      return 'Closing Argument — Defense'
-    case 'verdict':
-      return 'Deliver your verdict'
-    case 'concluded':
-      return 'Court adjourned'
-  }
-}
 
 export function TrialHUD() {
   const phase = useFlow((s) => s.phase)
@@ -39,7 +14,8 @@ export function TrialHUD() {
   const transcript = useFlow((s) => s.transcript)
 
   const { caseInfo } = useCaseGenerator()
-  const lawyer = useLawyers()
+  const defenseState = useLawyers((s) => s.defense)
+  const prosecutionState = useLawyers((s) => s.prosecution)
 
   const evidenceCount = caseInfo?.evidence_items.length ?? 0
   const currentEvidenceName =
@@ -47,17 +23,24 @@ export function TrialHUD() {
 
   const speakerSide: Side | null =
     activeSpeaker === 'defense' || activeSpeaker === 'prosecution' ? activeSpeaker : null
-  const speakerState = speakerSide ? lawyer[speakerSide] : null
+  const speakerState =
+    speakerSide === 'defense' ? defenseState : speakerSide === 'prosecution' ? prosecutionState : null
   const speakerName =
     activeSpeaker === 'judge'
-      ? 'The Court (you)'
+      ? HUD_STRINGS.speaker.judgeName
       : speakerState?.persona.name ?? null
+  const speakerTagLabel = speakerSide
+    ? HUD_STRINGS.speaker[speakerSide]
+    : HUD_STRINGS.speaker.judge
 
   const speechText = speakerState?.isThinking
-    ? '…'
+    ? HUD_STRINGS.speech.thinking
     : speakerState?.lastUtterance ?? null
 
-  const onStart = () => useFlow.getState().startTrial()
+  const onStart = () => {
+    if (!caseInfo) return
+    useFlow.getState().startTrial(caseInfo)
+  }
   const onSustain = () => useFlow.getState().ruleOnObjection('sustained')
   const onOverrule = () => useFlow.getState().ruleOnObjection('overruled')
   const onVerdict = (choice: string) => useFlow.getState().deliverVerdict(choice)
@@ -68,24 +51,22 @@ export function TrialHUD() {
 
   return (
     <div className="trial-hud" aria-live="polite">
-      <div className="trial-hud-phase">{phaseLabel(phase, currentEvidenceIndex, evidenceCount, currentEvidenceName)}</div>
+      <div className="trial-hud-phase">
+        {phaseLabel(phase, currentEvidenceIndex, evidenceCount, currentEvidenceName)}
+      </div>
 
       <div className="trial-hud-card">
         {speakerName && (
           <div className="trial-hud-speaker">
             <span className={`trial-hud-speaker-tag trial-hud-speaker-tag--${speakerSide ?? 'judge'}`}>
-              {speakerSide === 'prosecution'
-                ? 'Prosecution'
-                : speakerSide === 'defense'
-                  ? 'Defense'
-                  : 'Judge'}
+              {speakerTagLabel}
             </span>
             <span className="trial-hud-speaker-name">{speakerName}</span>
           </div>
         )}
 
         <p className={`trial-hud-speech ${speakerState?.isThinking ? 'trial-hud-speech--thinking' : ''}`}>
-          {speechText ?? (phase === 'pre_trial' ? 'Open the case file and begin when ready.' : ' ')}
+          {speechText ?? (phase === 'pre_trial' ? HUD_STRINGS.speech.preTrialHint : HUD_STRINGS.speech.empty)}
         </p>
 
         {showRuling && (
@@ -93,18 +74,19 @@ export function TrialHUD() {
             <div className="trial-hud-ruling-label">
               <Gavel size={14} />
               <span>
-                Objection by <strong>{pendingObjection.side === 'prosecution' ? 'Prosecution' : 'Defense'}</strong> —{' '}
+                {HUD_STRINGS.ruling.prefix}{' '}
+                <strong>{HUD_STRINGS.speaker[pendingObjection.side]}</strong> {HUD_STRINGS.ruling.separator}{' '}
                 <em>{pendingObjection.reason}</em>
               </span>
             </div>
             <div className="trial-hud-actions">
               <button type="button" className="trial-hud-btn trial-hud-btn--sustain" onClick={onSustain}>
                 <ShieldCheck size={16} />
-                Sustain
+                {HUD_STRINGS.ruling.sustain}
               </button>
               <button type="button" className="trial-hud-btn trial-hud-btn--overrule" onClick={onOverrule}>
                 <ShieldX size={16} />
-                Overrule
+                {HUD_STRINGS.ruling.overrule}
               </button>
             </div>
           </div>
@@ -112,7 +94,7 @@ export function TrialHUD() {
 
         {showVerdict && (
           <div className="trial-hud-verdict">
-            <div className="trial-hud-verdict-prompt">Select the verdict:</div>
+            <div className="trial-hud-verdict-prompt">{HUD_STRINGS.verdict.prompt}</div>
             <div className="trial-hud-actions trial-hud-actions--wrap">
               {caseInfo!.possible_choices.map((choice) => (
                 <button
@@ -132,14 +114,14 @@ export function TrialHUD() {
           <div className="trial-hud-actions">
             <button type="button" className="trial-hud-btn trial-hud-btn--primary" onClick={onStart}>
               <Play size={16} />
-              Begin Trial
+              {HUD_STRINGS.start.button}
             </button>
           </div>
         )}
       </div>
 
       {transcript.length > 0 && (
-        <div className="trial-hud-transcript-hint">{transcript.length} action{transcript.length === 1 ? '' : 's'} on record</div>
+        <div className="trial-hud-transcript-hint">{HUD_STRINGS.transcript.hint(transcript.length)}</div>
       )}
     </div>
   )

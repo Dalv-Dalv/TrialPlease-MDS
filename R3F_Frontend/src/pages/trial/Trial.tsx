@@ -8,7 +8,6 @@ import { TrialScene } from './scene/TrialScene'
 import { CaseTablet } from './components/CaseFile'
 import { TrialMenu } from './components/trial-menu/TrialMenu'
 import { TrialHUD } from './components/trial-hud/TrialHUD'
-import { TrialOrchestrator } from './orchestrator/TrialOrchestrator'
 import './Trial.css'
 
 export default function Trial() {
@@ -17,8 +16,6 @@ export default function Trial() {
 
   return (
     <div className="trial-shell">
-      <TrialOrchestrator />
-
       <div className="trial-crosshair" />
 
       <Canvas
@@ -60,7 +57,7 @@ export default function Trial() {
         <Menu size={18} />
       </button>
 
-      <TrialHUD />
+      {!isTabletOpen && <TrialHUD />}
 
       <TrialMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </div>
