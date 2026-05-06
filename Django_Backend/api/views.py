@@ -12,7 +12,7 @@ class CaseViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     # MAGIA SE ÎNTÂMPLĂ AICI! Creăm o rută nouă: /api/cases/generate/
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['get'])
     def generate(self, request):
         try:
             print("⏳ Apelăm AI-ul pentru a genera un caz nou...")

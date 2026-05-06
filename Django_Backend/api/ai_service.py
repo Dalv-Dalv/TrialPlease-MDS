@@ -85,5 +85,4 @@ Here are your case details:
 Here are the spoken statements from the case already:
 ''' + json.dumps(spoken_statements)
 
-    
   return getAgentJsonAnswer(prompt)
