@@ -4,11 +4,12 @@ Command: npx gltfjsx@6.5.3 .\Final_Coutroom.glb --types
 */
 
 import * as THREE from 'three'
-import React, { type JSX, useLayoutEffect } from 'react' // Added useLayoutEffect
+import React, { type JSX, useLayoutEffect, useRef } from 'react' // Added useLayoutEffect
 import { useGLTF } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber' // Added useLoader
 import { RGBELoader } from 'three-stdlib' // Added RGBELoader
 import type { GLTF } from 'three-stdlib'
+import { Gavel, type GavelHandle } from './Gavel'
 
 type GLTFResult = GLTF & {
 	nodes: {
@@ -81,6 +82,8 @@ type GLTFResult = GLTF & {
 
 export function TrialScene(props: JSX.IntrinsicElements['group']) {
 	const { nodes, materials } = useGLTF('/models/Final_Coutroom.glb') as unknown as GLTFResult
+
+	const gavelRef = useRef<GavelHandle>(null)
 
 	// 1. Load the HDR files
 	const furnitureHdr = useLoader(RGBELoader, '/textures/Furniture_Bake_Final.hdr')
@@ -165,16 +168,10 @@ export function TrialScene(props: JSX.IntrinsicElements['group']) {
 			</mesh>
 			<mesh geometry={nodes.Main_Doors.geometry} material={materials.Baked_Furniture} position={[0.399, 0.928, 11.451]} rotation={[0, -Math.PI / 2, 0]} />
 			<mesh geometry={nodes.MainDoors_PushBars.geometry} material={materials.Baked_Furniture} position={[0.019, 0.947, 11.39]} rotation={[-Math.PI, -1.571, 0]} scale={-1} />
-			<mesh geometry={nodes.Gavel_Handle.geometry} material={materials.DarkerWood_Shiny} position={[-0.574, 1.154, -2.197]} rotation={[-0.223, 1.571, 0]}>
-				<group position={[-0.258, 0, 0]}>
-					<mesh geometry={nodes.Mesh_1.geometry} material={materials.DarkerWood_Shiny} />
-					<mesh geometry={nodes.Mesh_2.geometry} material={materials.Gold} />
-				</group>
-			</mesh>
+			<Gavel ref={gavelRef} nodes={nodes} materials={materials} />
 			<mesh geometry={nodes.Judge_Desk.geometry} material={materials.Baked_Furniture} position={[0.0, 1, -2.477]} />
 			<mesh geometry={nodes.Clerks_Desk.geometry} material={materials.Baked_Furniture} position={[0.027, 0.275, -0.524]} />
 			<mesh geometry={nodes.Prosecution_Desk.geometry} material={materials.Baked_Furniture} position={[1.974, 0.086, 3.323]} rotation={[Math.PI, 0, Math.PI]} />
-			<mesh geometry={nodes.Gavel_StrikingPlatform.geometry} material={materials.Baked_Furniture} position={[-0.574, 1.209, -1.938]} />
 			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 0.497]}>
 				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
 			</mesh>
