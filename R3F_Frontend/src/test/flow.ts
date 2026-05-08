@@ -1,13 +1,20 @@
 import type { CaseData } from '../store/case-generator-store/caseGeneratorContext'
-import type { ObjectionReason, Side, TrialAction } from '../store/flow-store/flowStore'
+import type {
+  LawyerActionResponse,
+  ObjectionReason,
+  Phase,
+  Side,
+  TrialAction,
+} from '../store/flow-store/types'
 
 /**
  * Mock case + scripted lawyer responses used to simulate a full trial without
- * hitting the backend. Consumed by the LawyerProvider when the AI service is
- * unavailable. Replace these with real API calls once the backend is wired up.
+ * hitting the backend. Consumed by the flow store while the AI service is
+ * stubbed. Replace these with real API calls once the backend is wired up.
  */
 
 export const MOCK_CASE: CaseData = {
+  id: 1,
   case_name: 'The Crown vs. Marcus Verro',
   case_type: 'Grand Larceny',
   case_description:
@@ -173,4 +180,88 @@ export function findScriptedObjection(
     }
   }
   return null
+}
+
+// === Mock for POST /api/cases/<id>/lawyer_action/ ===========================
+// Per-side, per-evidence call counter so the mock returns each scripted
+// argument once and then signals "pass" by returning empty text.
+// Cleared by `resetMockLawyerAction()` (called by flow.startTrial / reset).
+const evidenceTurnsMap = new Map<string, number>()
+
+export function resetMockLawyerAction() {
+  evidenceTurnsMap.clear()
+}
+
+const sideEvKey = (side: Side, evidenceName: string) => `${side}::${evidenceName}`
+
+const mostRecentSpokenBy = (transcript: TrialAction[], side: Side): TrialAction | null => {
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    const a = transcript[i]
+    if (
+      (a.kind === 'opening_statement' ||
+        a.kind === 'closing_statement' ||
+        a.kind === 'evidence_argument') &&
+      a.side === side
+    ) {
+      return a
+    }
+  }
+  return null
+}
+
+const opposite = (s: Side): Side => (s === 'prosecution' ? 'defense' : 'prosecution')
+
+/**
+ * Drop-in mock for `fetchLawyerAction()`. Decides per-call whether to return a
+ * statement or an objection based on:
+ *   1. whether the opponent's most recent statement matches an objection
+ *      trigger (objection wins if so),
+ *   2. otherwise, the next scripted line for the current phase / evidence.
+ *
+ * Returns an empty-text statement when no script is available (flow store
+ * interprets that as a pass during evidence_debate).
+ */
+export function mockLawyerAction(
+  side: Side,
+  phase: Phase,
+  currentEvidenceName: string | null,
+  transcript: TrialAction[],
+  confidence: number,
+): LawyerActionResponse {
+  // 1. Objection check — only against the opponent's most recent SpokenAction.
+  const opponentLast = mostRecentSpokenBy(transcript, opposite(side))
+  if (opponentLast) {
+    const obj = findScriptedObjection(side, opponentLast)
+    if (obj) {
+      return {
+        action: 'objection',
+        reason: obj.reason,
+        confidence_level: confidence,
+      }
+    }
+  }
+
+  // 2. Statement based on phase.
+  let text: string | null = null
+  if (phase === 'opening_prosecution' || phase === 'opening_defense') {
+    text = MOCK_OPENINGS[side]
+  } else if (phase === 'closing_prosecution' || phase === 'closing_defense') {
+    text = MOCK_CLOSINGS[side]
+  } else if (phase === 'evidence_debate' && currentEvidenceName) {
+    const key = sideEvKey(side, currentEvidenceName)
+    const turns = evidenceTurnsMap.get(key) ?? 0
+    const next = nextScriptedArgument(side, currentEvidenceName, turns)
+    if (next != null) {
+      evidenceTurnsMap.set(key, turns + 1)
+      text = next
+    } else {
+      text = '' // exhausted → pass
+    }
+  }
+
+  return {
+    action: 'statement',
+    text: text ?? '',
+    confidence_level: confidence,
+  }
 }

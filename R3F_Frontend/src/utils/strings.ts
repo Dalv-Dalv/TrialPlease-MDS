@@ -1,4 +1,4 @@
-import type { Phase, Side } from '../store/flow-store/flowStore'
+import type { Phase, Side } from '../store/flow-store/types'
 
 export const HUD_STRINGS = {
   phase: {
@@ -39,6 +39,11 @@ export const HUD_STRINGS = {
 
   start: {
     button: 'Begin Trial',
+  },
+
+  advance: {
+    button: 'Continue',
+    waiting: 'Speaking…',
   },
 
   transcript: {

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Side } from '../flow-store/flowStore'
+import type { Side } from '../flow-store/types'
 import { MOCK_PERSONAS } from '../../test/flow'
 
 export type LawyerSideState = {

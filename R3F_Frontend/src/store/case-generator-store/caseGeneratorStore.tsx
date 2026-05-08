@@ -4,7 +4,6 @@ import {
   type CaseData,
   type CaseGeneratorContextValue,
 } from './caseGeneratorContext'
-// TODO: replace mock with real backend call once the case-generation API is wired up.
 import { MOCK_CASE } from '../../test/flow'
 
 export function CaseGeneratorProvider({ children }: { children: ReactNode }) {
@@ -15,9 +14,21 @@ export function CaseGeneratorProvider({ children }: { children: ReactNode }) {
   const fetchCase = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    await new Promise((r) => setTimeout(r, 500))
-    setCaseInfo(MOCK_CASE)
-    setIsLoading(false)
+    try {
+      const res = await fetch(`/api/cases/generate/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) throw new Error(`generate ${res.status}`)
+      const data = await res.json()
+      // Backend may return either the case object directly or `{ case: {...} }`.
+      setCaseInfo((data?.case ?? data) as CaseData)
+    } catch (err) {
+      console.warn('[case] generate API failed, falling back to mock:', err)
+      setCaseInfo(MOCK_CASE)
+    } finally {
+      setIsLoading(false)
+    }
   }, [])
 
   const clearCase = useCallback(() => {

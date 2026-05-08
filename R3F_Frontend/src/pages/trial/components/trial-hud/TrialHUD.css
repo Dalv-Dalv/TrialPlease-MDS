@@ -164,6 +164,12 @@
   transform: scale(0.97);
 }
 
+.trial-hud-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .trial-hud-btn--primary {
   background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
   border-color: transparent;

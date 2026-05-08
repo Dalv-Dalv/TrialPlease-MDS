@@ -1,5 +1,7 @@
-import { Gavel, ShieldCheck, ShieldX, Play } from 'lucide-react'
-import { useFlow, type Side } from '../../../../store/flow-store/flowStore'
+import { useEffect } from 'react'
+import { Gavel, ShieldCheck, ShieldX, Play, ChevronRight } from 'lucide-react'
+import { useFlow } from '../../../../store/flow-store/flowStore'
+import type { Side } from '../../../../store/flow-store/types'
 import { useLawyers } from '../../../../store/lawyer-store/lawyerStore'
 import { useCaseGenerator } from '../../../../store/case-generator-store/caseGeneratorContext'
 import { HUD_STRINGS, phaseLabel } from '../../../../utils/strings'
@@ -41,13 +43,49 @@ export function TrialHUD() {
     if (!caseInfo) return
     useFlow.getState().startTrial(caseInfo)
   }
-  const onSustain = () => useFlow.getState().ruleOnObjection('sustained')
-  const onOverrule = () => useFlow.getState().ruleOnObjection('overruled')
-  const onVerdict = (choice: string) => useFlow.getState().deliverVerdict(choice)
+  const onAdvance = () => {
+    void useFlow.getState().advanceTurn()
+  }
+  const onSustain = () => useFlow.getState().approveObjection()
+  const onOverrule = () => useFlow.getState().opposeObjection()
+  const onVerdict = (choice: string) => {
+    void useFlow.getState().deliverVerdict(choice)
+  }
+
+  const isAITurnPhase =
+    phase === 'opening_prosecution' ||
+    phase === 'opening_defense' ||
+    phase === 'evidence_debate' ||
+    phase === 'closing_prosecution' ||
+    phase === 'closing_defense'
+  const isThinking = defenseState.isThinking || prosecutionState.isThinking
 
   const showStart = phase === 'pre_trial' && caseInfo != null
+  const showAdvance = isAITurnPhase && awaitingUser == null
   const showRuling = awaitingUser === 'objection_ruling' && pendingObjection != null
   const showVerdict = awaitingUser === 'verdict' && caseInfo != null
+
+  // Enter triggers Continue when it's available and no AI turn is in flight.
+  useEffect(() => {
+    if (!showAdvance || isThinking) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return
+      const target = e.target as HTMLElement | null
+      // Don't hijack Enter from form fields / contenteditable surfaces.
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+      e.preventDefault()
+      void useFlow.getState().advanceTurn()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showAdvance, isThinking])
 
   return (
     <div className="trial-hud" aria-live="polite">
@@ -55,7 +93,11 @@ export function TrialHUD() {
         {phaseLabel(phase, currentEvidenceIndex, evidenceCount, currentEvidenceName)}
       </div>
 
-      <div className="trial-hud-card">
+      <div
+        className="trial-hud-card"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         {speakerName && (
           <div className="trial-hud-speaker">
             <span className={`trial-hud-speaker-tag trial-hud-speaker-tag--${speakerSide ?? 'judge'}`}>
@@ -115,6 +157,20 @@ export function TrialHUD() {
             <button type="button" className="trial-hud-btn trial-hud-btn--primary" onClick={onStart}>
               <Play size={16} />
               {HUD_STRINGS.start.button}
+            </button>
+          </div>
+        )}
+
+        {showAdvance && (
+          <div className="trial-hud-actions">
+            <button
+              type="button"
+              className="trial-hud-btn trial-hud-btn--primary"
+              onClick={onAdvance}
+              disabled={isThinking}
+            >
+              <ChevronRight size={16} />
+              {isThinking ? HUD_STRINGS.advance.waiting : HUD_STRINGS.advance.button}
             </button>
           </div>
         )}
