@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { PointerLockControls } from '@react-three/drei'
 import { EffectComposer, Bloom, Noise, ToneMapping } from '@react-three/postprocessing'
@@ -9,17 +9,39 @@ import { CaseTablet } from './components/CaseFile'
 import { TrialMenu } from './components/trial-menu/TrialMenu'
 import { TrialHUD } from './components/trial-hud/TrialHUD'
 import { TrialOrchestrator } from './orchestrator/TrialOrchestrator'
+import { TrialLoadingScreen } from './components/TrialLoadingScreen'
 import './Trial.css'
+
+function SceneReadyNotifier({ onReady }: { onReady: () => void }) {
+  useEffect(() => {
+    // Wait for the next few frames to ensure the GPU has started compiling and rendering
+    let frame1: number, frame2: number;
+    frame1 = requestAnimationFrame(() => {
+      frame2 = requestAnimationFrame(() => {
+        onReady()
+      })
+    })
+    return () => {
+      cancelAnimationFrame(frame1)
+      cancelAnimationFrame(frame2)
+    }
+  }, [onReady])
+  return null
+}
 
 export default function Trial() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [isTabletOpen, setIsTabletOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [sceneReady, setSceneReady] = useState(false)
 
   return (
     <div className="trial-shell">
+      {isLoading && <TrialLoadingScreen sceneReady={sceneReady} onLoaded={() => setIsLoading(false)} />}
+
       <TrialOrchestrator />
 
-      <div className="trial-crosshair" />
+      {!isLoading && <div className="trial-crosshair" />}
 
       <Canvas
         gl={{ antialias: false }}
@@ -34,15 +56,17 @@ export default function Trial() {
           color={[1, 0.4, 0.3]}
         />
 
-        <TrialScene />
+        <Suspense fallback={null}>
+          <SceneReadyNotifier onReady={() => setSceneReady(true)} />
+          <TrialScene />
+          <CaseTablet
+            deskPosition={[0.5, 1.15, -2.1]}
+            deskRotation={[Math.PI / 2, Math.PI, 0]}
+            onOpenChange={setIsTabletOpen}
+          />
+        </Suspense>
 
-        <CaseTablet
-          deskPosition={[0.5, 1.15, -2.1]}
-          deskRotation={[Math.PI / 2, Math.PI, 0]}
-          onOpenChange={setIsTabletOpen}
-        />
-
-        <PointerLockControls makeDefault enabled={!isTabletOpen} />
+        <PointerLockControls makeDefault enabled={!isTabletOpen && !isLoading} />
 
         <EffectComposer>
           <Bloom luminanceThreshold={0.95} luminanceSmoothing={0.625} />
@@ -51,16 +75,20 @@ export default function Trial() {
         </EffectComposer>
       </Canvas>
 
-      <button
-        type="button"
-        className="trial-menu-trigger"
-        onClick={() => setMenuOpen(true)}
-        aria-label="Open menu"
-      >
-        <Menu size={18} />
-      </button>
+      {!isLoading && (
+        <>
+          <button
+            type="button"
+            className="trial-menu-trigger"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu size={18} />
+          </button>
 
-      <TrialHUD />
+          <TrialHUD />
+        </>
+      )}
 
       <TrialMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </div>
