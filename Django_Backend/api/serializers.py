@@ -9,7 +9,7 @@ class EvidenceSerializer(serializers.ModelSerializer):
 class WitnessSerializer(serializers.ModelSerializer):
     class Meta:
         model = Witness
-        fields = ['id', 'name', 'role', 'summary_statement']
+        fields = ['id', 'name', 'role', 'summary_statement', 'hidden_truth']
 
 class ChoiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,6 +25,7 @@ class CaseSerializer(serializers.ModelSerializer):
         model = Case
         fields = [
             'id', 'case_name', 'case_type', 'case_description', 
+            'police_report', 'absolute_truth',
             'defendant', 'victim', 'correct_verdict', 'created_at',
             'possible_choices', 'evidence_items', 'witnesses'
         ]
