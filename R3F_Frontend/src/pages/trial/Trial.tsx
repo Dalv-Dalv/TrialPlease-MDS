@@ -10,6 +10,7 @@ import { TrialMenu } from './components/trial-menu/TrialMenu'
 import { TrialHUD } from './components/trial-hud/TrialHUD'
 import { TrialLoadingScreen } from './components/TrialLoadingScreen'
 import './Trial.css'
+import { FlyCamera } from './components/FlyCamera'
 
 function SceneReadyNotifier({ onReady }: { onReady: () => void }) {
   useEffect(() => {
@@ -45,11 +46,20 @@ export default function Trial() {
         camera={{ position: [0, 1.468, -2.42], fov: 90 }}
         frameloop="always"
       >
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={1.5} />
         <directionalLight
-          position={[10, 10, 5]}
+          position={[-10, 10, -5]}
           intensity={18.5}
-          rotation={[-0.5607, 0.1024, -1.1726]}
+          color={[1, 0.4, 0.3]}
+        >
+          {/* In Three.js, DirectionalLight rotation does nothing. It always points from its 'position' to its 'target'. */}
+          {/* Move the position above, or move this target to change the angle of the light! */}
+          <object3D attach="target" position={[0, 0, 0]} />
+        </directionalLight>
+
+        <pointLight
+          position={[0, 5, 5]}
+          intensity={200.5}
           color={[1, 0.4, 0.3]}
         />
 
@@ -63,7 +73,8 @@ export default function Trial() {
           />
         </Suspense>
 
-        <PointerLockControls makeDefault enabled={!isTabletOpen && !isLoading} />
+        {/* <PointerLockControls makeDefault enabled={!isTabletOpen && !isLoading} /> */}
+        <FlyCamera />
 
         <EffectComposer>
           <Bloom luminanceThreshold={0.95} luminanceSmoothing={0.625} />

@@ -10,6 +10,7 @@ import { useLoader } from '@react-three/fiber' // Added useLoader
 import { EXRLoader, RGBELoader } from 'three-stdlib' // Added RGBELoader
 import type { GLTF } from 'three-stdlib'
 import { Gavel, type GavelHandle } from './Gavel'
+import { CourtroomCharacters } from './CourtroomCharacters'
 
 type GLTFResult = GLTF & {
 	nodes: {
@@ -230,6 +231,7 @@ export function TrialScene(props: JSX.IntrinsicElements['group']) {
 			<mesh geometry={nodes.Walls.geometry} material={materials.Baked_Room} position={[0, 0, -4]} />
 			<mesh geometry={nodes.Walls_Brim.geometry} material={materials.Baked_Room} />
 			<mesh geometry={nodes.Ceiling.geometry} material={materials.Baked_Room} position={[0, 4.592, 3.584]} />
+			<CourtroomCharacters />
 		</group>
 	)
 }
