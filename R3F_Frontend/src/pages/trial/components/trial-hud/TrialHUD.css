@@ -1,0 +1,208 @@
+.trial-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  font-family: inherit;
+}
+
+.trial-hud-phase {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: var(--color-surface-dark-transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.5rem 1.25rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  max-width: calc(100vw - 3rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trial-hud-card {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(720px, calc(100vw - 3rem));
+  pointer-events: auto;
+  background: var(--color-surface-dark-transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px var(--color-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trial-hud-speaker {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.trial-hud-speaker-tag {
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.trial-hud-speaker-tag--prosecution {
+  border-color: var(--color-primary-soft);
+  color: var(--color-primary-soft);
+}
+
+.trial-hud-speaker-tag--defense {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.trial-hud-speaker-tag--judge {
+  border-color: var(--color-text-secondary);
+  color: var(--color-text);
+}
+
+.trial-hud-speaker-name {
+  font-weight: 600;
+  color: var(--color-text-strong);
+}
+
+.trial-hud-speech {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--color-text);
+  min-height: 1.55em;
+}
+
+.trial-hud-speech--thinking {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.trial-hud-ruling,
+.trial-hud-verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.trial-hud-ruling-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.trial-hud-ruling-label strong {
+  color: var(--color-text-strong);
+  font-weight: 600;
+}
+
+.trial-hud-ruling-label em {
+  color: var(--color-primary-soft);
+  font-style: normal;
+  text-transform: capitalize;
+}
+
+.trial-hud-verdict-prompt {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.trial-hud-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.trial-hud-actions--wrap {
+  flex-wrap: wrap;
+}
+
+.trial-hud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-dark-transparent);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms, border-color 150ms, transform 80ms;
+}
+
+.trial-hud-btn:hover {
+  background: var(--color-surface-dark-transparent);
+  border-color: var(--color-primary-soft);
+}
+
+.trial-hud-btn:active {
+  transform: scale(0.97);
+}
+
+.trial-hud-btn--primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border-color: transparent;
+  color: var(--color-text-strong);
+  box-shadow: 0 0 0 0 var(--color-primary-glow-soft);
+}
+
+.trial-hud-btn--primary:hover {
+  border-color: transparent;
+  box-shadow: 0 0 24px var(--color-primary-glow);
+}
+
+.trial-hud-btn--sustain {
+  border-color: rgba(99, 102, 241, 0.4);
+  color: var(--color-primary-soft);
+}
+
+.trial-hud-btn--sustain:hover {
+  background: var(--color-primary-glow-soft);
+  border-color: var(--color-primary-soft);
+}
+
+.trial-hud-btn--overrule {
+  border-color: rgba(220, 38, 38, 0.4);
+  color: var(--color-danger-hover);
+}
+
+.trial-hud-btn--overrule:hover {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: var(--color-danger);
+}
+
+.trial-hud-transcript-hint {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  pointer-events: none;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
