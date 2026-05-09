@@ -28,12 +28,19 @@
   text-overflow: ellipsis;
 }
 
-.trial-hud-card {
+.trial-hud-stack {
   position: absolute;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   width: min(720px, calc(100vw - 3rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.trial-hud-card {
   pointer-events: auto;
   background: var(--color-surface-dark-transparent);
   border: 1px solid var(--color-border);
@@ -45,6 +52,108 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.trial-hud-history {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--color-surface-dark-transparent);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem 0.5rem 1rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.trial-hud-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 24px;
+}
+
+.trial-hud-history-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-family: 'Cinzel', Georgia, serif;
+  color: var(--color-text-secondary);
+}
+
+.trial-hud-toggle {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+  flex-shrink: 0;
+}
+
+.trial-hud-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-primary-soft);
+  color: var(--color-text-strong);
+}
+
+.trial-hud-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.trial-hud-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 30vh;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.trial-hud-history--collapsed {
+  padding: 0.4rem 0.75rem 0.4rem 1rem;
+}
+
+.trial-hud-history-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.trial-hud-history-tag {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-family: 'Cinzel', Georgia, serif;
+  min-width: 90px;
+}
+
+.trial-hud-history-tag--prosecution {
+  color: var(--color-primary-soft);
+}
+
+.trial-hud-history-tag--defense {
+  color: var(--color-accent);
+}
+
+.trial-hud-history-text {
+  flex: 1;
 }
 
 .trial-hud-speaker {
@@ -162,6 +271,12 @@
 
 .trial-hud-btn:active {
   transform: scale(0.97);
+}
+
+.trial-hud-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .trial-hud-btn--primary {

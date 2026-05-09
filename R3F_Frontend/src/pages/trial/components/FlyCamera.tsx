@@ -69,6 +69,6 @@ export function FlyCamera() {
 
     return (
         // PointerLockControls locks the mouse to the canvas and handles FPS rotation
-        <PointerLockControls />
+        <PointerLockControls makeDefault/>
     )
 }
