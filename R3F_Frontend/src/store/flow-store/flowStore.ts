@@ -26,7 +26,10 @@ const initialState = {
   caseId: null as number | null,
   confidence: { defense: 0.5, prosecution: 0.5 },
   debrief: null as DebriefResult | null,
+  recentSpeech: [] as { id: string; side: Side; text: string }[],
 }
+
+const RECENT_SPEECH_MAX = 8
 
 const newId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -46,9 +49,6 @@ const phaseOrder: Phase[] = [
 
 const opposite = (s: Side): Side => (s === 'prosecution' ? 'defense' : 'prosecution')
 
-function delay(ms: number) {
-  return new Promise<void>((r) => setTimeout(r, ms))
-}
 
 // Snapshot of the case being tried. The flow lives outside React, so we
 // capture it on startTrial() instead of going through the case-generator
@@ -143,11 +143,27 @@ async function fetchDebrief(caseId: number, verdict: string): Promise<DebriefRes
 
 // === Speech / appendAction helpers ==========================================
 
-async function speak(side: Side, text: string) {
+/** Set the lawyer side into "thinking" — clears prior utterance so the HUD
+ *  shows "..." immediately instead of the previous speech. */
+function beginThinking(side: Side) {
+  useLawyers.getState().setUtterance(side, null)
   useLawyers.getState().setThinking(side, true)
-  await delay(500)
+}
+
+/** Commit a freshly-spoken utterance: clear thinking, store text, push to
+ *  the recent-speech ring buffer for the HUD. */
+function commitSpeech(side: Side, text: string) {
+  const id = newId()
   useLawyers.getState().setThinking(side, false)
   useLawyers.getState().setUtterance(side, text)
+  useFlow.setState((s) => ({
+    recentSpeech: [...s.recentSpeech, { id, side, text }].slice(-RECENT_SPEECH_MAX),
+  }))
+}
+
+/** Clear the thinking flag without committing speech (used on objections). */
+function endThinking(side: Side) {
+  useLawyers.getState().setThinking(side, false)
 }
 
 const isSpoken = (a: TrialAction): a is SpokenAction =>
@@ -208,6 +224,8 @@ export const useFlow = create<FlowState>((set, get) => ({
     }
 
     advanceInProgress = true
+    // Show "..." immediately so the user gets feedback while the API is in flight.
+    beginThinking(speaker)
     try {
       const evidenceName =
         flow.phase === 'evidence_debate' && flow.currentEvidenceIndex != null
@@ -225,6 +243,7 @@ export const useFlow = create<FlowState>((set, get) => ({
       console.debug('[flow] lawyer_action response', { phase: flow.phase, speaker, response })
 
       if (response.action === 'objection') {
+        endThinking(speaker)
         const target = lastSpokenBy(flow.transcript, opposite(speaker))
         if (!target) return
         get().raiseObjection(speaker, response.reason, target.id)
@@ -232,10 +251,11 @@ export const useFlow = create<FlowState>((set, get) => ({
       }
 
       const text = response.text ?? ''
+      if (text) commitSpeech(speaker, text)
+      else endThinking(speaker)
 
       // ── Openings: exactly one turn per phase. Always advance afterwards. ──
       if (flow.phase === 'opening_prosecution' || flow.phase === 'opening_defense') {
-        if (text) await speak(speaker, text)
         get().appendAction({
           id: newId(),
           ts: Date.now(),
@@ -249,7 +269,6 @@ export const useFlow = create<FlowState>((set, get) => ({
 
       // ── Closings: same shape as openings. ──
       if (flow.phase === 'closing_prosecution' || flow.phase === 'closing_defense') {
-        if (text) await speak(speaker, text)
         get().appendAction({
           id: newId(),
           ts: Date.now(),
@@ -261,14 +280,13 @@ export const useFlow = create<FlowState>((set, get) => ({
         return
       }
 
-      // ── Evidence debate: empty text ⇒ pass; otherwise speak + rotate. ──
+      // ── Evidence debate: empty text ⇒ pass; otherwise just rotate. ──
       if (flow.phase === 'evidence_debate' && evidenceName) {
         if (!text) {
           get().passEvidence(speaker, evidenceName)
           get().setActiveSpeaker(opposite(speaker))
           return
         }
-        await speak(speaker, text)
         get().appendAction({
           id: newId(),
           ts: Date.now(),

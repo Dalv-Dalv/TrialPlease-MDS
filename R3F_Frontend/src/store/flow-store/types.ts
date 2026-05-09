@@ -54,6 +54,13 @@ export type DebriefResult = {
   score?: number
 }
 
+/** Compact entry kept in flow.recentSpeech for the HUD to render history. */
+export type SpeechEntry = {
+  id: string
+  side: Side
+  text: string
+}
+
 export type FlowState = {
   // === phase machine ===
   phase: Phase
@@ -68,6 +75,9 @@ export type FlowState = {
   caseId: number | null
   confidence: { defense: number; prosecution: number }
   debrief: DebriefResult | null
+
+  /** Last 8 spoken responses (statements only), newest at the end. */
+  recentSpeech: SpeechEntry[]
 
   // === user-callable trial control ===
   /** Run one turn for the current speaker. Statement or objection auto-routed. */

@@ -49,6 +49,10 @@ export const HUD_STRINGS = {
   transcript: {
     hint: (count: number) => `${count} action${count === 1 ? '' : 's'} on record`,
   },
+
+  history: {
+    title: 'Conversation History',
+  },
 } as const
 
 export function phaseLabel(
