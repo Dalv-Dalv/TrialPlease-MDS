@@ -5,7 +5,6 @@ import { SkeletonUtils } from 'three-stdlib'
 import * as THREE from 'three'
 import { useTrialSceneAnimation, type CharacterRole, type ActionName } from './useTrialSceneAnimation'
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const CHARACTER_MODELS = [
   'Ch08', 'Ch12', 'Ch23', 'Ch28', 'Ch31', 'Ch33', 'Ch41', 'Ch06', 'Ch07'
 ] as const;
@@ -26,7 +25,6 @@ const ROOT_BONES: Record<CharacterModel, string> = {
 
 const IDLE_ANIMATIONS = ['SitIdle1', 'SitIdle2', 'SitIdle3', 'SitIdle4'];
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const ANIMATION_OFFSETS: Record<ActionName, { position: [number, number, number], rotation: [number, number, number] }> = {
   SitIdle1: { position: [0, -0.4, 0], rotation: [0, 0, 0] },
   SitIdle2: { position: [0, -0.4, 0], rotation: [0, 0, 0] },
@@ -45,11 +43,11 @@ export function CharacterInstance({
   model: CharacterModel,
   role: CharacterRole
 } & JSX.IntrinsicElements['group']) {
-  const { scene, materials } = useGLTF('/models/CharacterModels.glb') as unknown as { scene: THREE.Group, materials: Record<string, THREE.Material> }
+  const { scene, materials } = useGLTF('/models/CharacterModels.glb') as any
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene])
-  const { nodes } = useGraph(clone) as unknown as { nodes: Record<string, THREE.SkinnedMesh | THREE.Bone> }
+  const { nodes } = useGraph(clone) as any
 
-  const { animations } = useGLTF('/models/AnimationsExport.glb') as unknown as { animations: THREE.AnimationClip[] };
+  const { animations } = useGLTF('/models/AnimationsExport.glb') as any;
   const rootBone = ROOT_BONES[model];
   const modifiedAnimations = useMemo(() => {
     return animations.map((clip: THREE.AnimationClip) => {
@@ -85,9 +83,9 @@ export function CharacterInstance({
   const setRoleState = useTrialSceneAnimation((state) => state.setRoleState);
   const [currentAnimName, setCurrentAnimName] = useState<ActionName>('SitIdle1');
 
-  const [idleAnimName] = useState<ActionName>(() => {
+  const idleAnimName = useMemo(() => {
     return IDLE_ANIMATIONS[Math.floor(Math.random() * IDLE_ANIMATIONS.length)] as ActionName;
-  });
+  }, []);
 
   useEffect(() => {
     if (!actions || !mixer) return;
@@ -110,7 +108,7 @@ export function CharacterInstance({
     setCurrentAnimName(targetAnim);
     action.reset();
     action.setLoop(loop, Infinity);
-    Object.assign(action, { clampWhenFinished: clamp });
+    action.clampWhenFinished = clamp;
 
     if (roleState === 'sit') {
       action.time = Math.random() * action.getClip().duration;
@@ -122,12 +120,11 @@ export function CharacterInstance({
     if (roleState !== 'stand') {
       action.crossFadeFrom(actions[currentAnimName] || action, 0.5, true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actions, mixer, roleState, idleAnimName]);
 
   useEffect(() => {
     if (!mixer) return;
-    const onFinished = (e: { action: { getClip: () => { name: string } } }) => {
+    const onFinished = (e: any) => {
       const actionName = e.action.getClip().name;
       if (actionName === 'StandToSit') {
         setRoleState(role, 'sit');
@@ -140,7 +137,7 @@ export function CharacterInstance({
   }, [mixer, role, setRoleState]);
 
   useLayoutEffect(() => {
-    Object.values(materials).forEach((mat: THREE.Material & { depthWrite?: boolean, alphaTest?: number }) => {
+    Object.values(materials).forEach((mat: any) => {
       mat.depthWrite = true;
       if (mat.transparent) {
         mat.transparent = false;

@@ -5,8 +5,8 @@ import type { ThreeEvent } from '@react-three/fiber'
 
 // Types for the props so it integrates seamlessly with your existing code
 interface GavelProps {
-    nodes: Record<string, THREE.Mesh>
-    materials: Record<string, THREE.Material>
+    nodes: any
+    materials: any
 }
 
 // Expose the strike method to parent components

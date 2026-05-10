@@ -24,8 +24,8 @@ export default function Login() {
       setError(null)
       await login(username, password)
       navigate(redirectTo, { replace: true })
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+    } catch (err: any) {
+      setError(err.message || 'Login failed')
     }
   }
 

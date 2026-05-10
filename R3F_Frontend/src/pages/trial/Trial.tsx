@@ -1,5 +1,6 @@
 import { useState, Suspense, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
+import { PointerLockControls } from '@react-three/drei'
 import { EffectComposer, Bloom, Noise, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import { Menu } from 'lucide-react'
@@ -13,9 +14,9 @@ import { FlyCamera } from './components/FlyCamera'
 
 function SceneReadyNotifier({ onReady }: { onReady: () => void }) {
   useEffect(() => {
-
-    let frame2: number;
-    const frame1 = requestAnimationFrame(() => {
+    // Wait for the next few frames to ensure the GPU has started compiling and rendering
+    let frame1: number, frame2: number;
+    frame1 = requestAnimationFrame(() => {
       frame2 = requestAnimationFrame(() => {
         onReady()
       })

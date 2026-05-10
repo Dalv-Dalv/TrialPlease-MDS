@@ -58,10 +58,9 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isViewing]);
 
-    const handleTabletClick = (e: { stopPropagation: () => void }) => {
+    const handleTabletClick = (e: any) => {
         e.stopPropagation();
         if (isViewing) return;
         if (Date.now() - lastCloseTime.current < 500) return;
@@ -69,8 +68,8 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
         onOpenChange?.(true);
         if (!caseInfo && !isLoading) fetchCase();
         setTimeout(() => {
-            if (controls && typeof (controls as { unlock?: () => void }).unlock === 'function') {
-                (controls as { unlock?: () => void }).unlock();
+            if (controls && typeof (controls as any).unlock === 'function') {
+                (controls as any).unlock();
             } else {
                 document.exitPointerLock();
             }
@@ -82,8 +81,8 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
         onOpenChange?.(false);
         lastCloseTime.current = Date.now();
         setTimeout(() => {
-            if (controls && typeof (controls as { lock?: () => void }).lock === 'function') {
-                (controls as { lock?: () => void }).lock();
+            if (controls && typeof (controls as any).lock === 'function') {
+                (controls as any).lock();
             }
         }, 50);
     };
