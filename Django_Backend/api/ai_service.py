@@ -19,7 +19,7 @@ def getAgentJsonAnswer(prompt):
 
   return json.loads(raw_text) # Returnăm DOAR dicționarul curat!
 
-def genereaza_caz_cu_ai():
+def generateCase():
   prompt = '''You are a professional paralegal and scenario architect for a courtroom simulation game. Your task is to create a complex and balanced, but fun, fictional court case that allows for arguments for both the defense and the prosecution.
 The court case should be fun and interesting.
 You must generate the case details and respond STRICTLY with a valid JSON object. 
