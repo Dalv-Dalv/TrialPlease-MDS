@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "master", "develop" ]
+    branches: [ "StefanBusoi", "main", "master", "develop" ]
   pull_request:
-    branches: [ "main", "master", "develop" ]
+    branches: [ "StefanBusoi", "main", "master", "develop" ]
 
 jobs:
   backend:
@@ -27,6 +27,8 @@ jobs:
           if [ -f Django_Backend/requirements.txt ]; then pip install -r Django_Backend/requirements.txt; fi
 
       - name: Run Django Tests
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           cd Django_Backend
           python manage.py test
