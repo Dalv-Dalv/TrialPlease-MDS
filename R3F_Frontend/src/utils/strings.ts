@@ -1,4 +1,4 @@
-import type { Phase, Side } from '../store/flow-store/flowStore'
+import type { Phase, Side } from '../store/flow-store/types'
 
 export const HUD_STRINGS = {
   phase: {
@@ -41,8 +41,17 @@ export const HUD_STRINGS = {
     button: 'Begin Trial',
   },
 
+  advance: {
+    button: 'Continue',
+    waiting: 'Speaking…',
+  },
+
   transcript: {
     hint: (count: number) => `${count} action${count === 1 ? '' : 's'} on record`,
+  },
+
+  history: {
+    title: 'Conversation History',
   },
 } as const
 

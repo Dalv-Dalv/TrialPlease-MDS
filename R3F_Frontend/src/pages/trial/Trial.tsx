@@ -73,8 +73,8 @@ export default function Trial() {
           />
         </Suspense>
 
-        {/* <PointerLockControls makeDefault enabled={!isTabletOpen && !isLoading} /> */}
-        <FlyCamera />
+        <PointerLockControls makeDefault enabled={!isTabletOpen && !isLoading} />
+        {/* <FlyCamera /> */}
 
         <EffectComposer>
           <Bloom luminanceThreshold={0.95} luminanceSmoothing={0.625} />

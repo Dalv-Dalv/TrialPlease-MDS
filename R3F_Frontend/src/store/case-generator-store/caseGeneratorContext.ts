@@ -17,6 +17,7 @@ export interface Witness {
 }
 
 export interface CaseData {
+  id: number
   case_name: string
   case_type: string
   case_description: string

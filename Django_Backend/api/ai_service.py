@@ -60,6 +60,8 @@ def getAgentAcuserReply(case_json, spoken_statements, confidence_level="normal")
 You are a relentless, logical, and justice-oriented prosecutor / prosecution lawyer. Your role is to demonstrate the defendant's guilt using available evidence, testimony, and irrefutable logic, demanding their punishment for the crimes committed against the victim.
 Your current confidence level is: {confidence_level}. If high, be aggressive and press hard. If low, be hesitant or flustered.
 
+Do not try to call witnesses to the stand. You may however refer to them and their statements.
+
 You will receive the case details in JSON format. You must analyze the case and respond STRICTLY with a valid JSON object representing your next action. Do not include any other text, greetings, or formatting outside of the raw JSON object.
 
 The JSON structure must be as follows:
@@ -68,6 +70,8 @@ The JSON structure must be as follows:
   "reason": "If objection, provide reason like 'hearsay', 'leading', 'speculation', etc. Otherwise null.",
   "dialogue": "Your statement or the dialogue for your objection."
 }}
+
+Your dialogue reply must not exceed 500 characters. Make sure to space out your paragraphs on new lines if you have multiple.
 
 Here are your case details:
 {json.dumps(case_json)}
@@ -84,6 +88,8 @@ def getAgentDefendentReply(case_json, spoken_statements, confidence_level="norma
 You are a top-tier defense attorney, extremely analytical, eloquent, and persuasive. Your role is to defend the accused in a given case, find loopholes in the prosecution's evidence, question the credibility of witnesses, and construct a narrative of innocence or mitigating circumstances.
 Your current confidence level is: {confidence_level}. If high, be aggressive and press hard. If low, be hesitant or flustered.
 
+Do not try to call witnesses to the stand. You may however refer to them and their statements.
+
 You will receive the case details in JSON format. You must analyze the case and respond STRICTLY with a valid JSON object representing your next action. Do not include any other text, greetings, or formatting outside of the raw JSON object.
 
 The JSON structure must be as follows:
@@ -92,6 +98,8 @@ The JSON structure must be as follows:
   "reason": "If objection, provide reason like 'hearsay', 'leading', 'speculation', etc. Otherwise null.",
   "dialogue": "Your statement or the dialogue for your objection."
 }}
+
+Your dialogue reply must not exceed 500 characters. Make sure to space out your paragraphs on new lines if you have multiple.
 
 Here are your case details:
 {json.dumps(case_json)}
