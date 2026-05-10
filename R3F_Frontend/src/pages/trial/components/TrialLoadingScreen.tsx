@@ -14,12 +14,12 @@ export function TrialLoadingScreen({ onLoaded, sceneReady }: Props) {
   useEffect(() => {
     if (progress === 100 && !active && total > 0 && sceneReady) {
       // Small delay for smooth transition
-      setFade(true)
+      const t0 = setTimeout(() => setFade(true), 0)
       const t1 = setTimeout(() => {
         setVisible(false)
         onLoaded()
       }, 500)
-      return () => clearTimeout(t1)
+      return () => { clearTimeout(t0); clearTimeout(t1); }
     }
   }, [progress, active, total, sceneReady, onLoaded])
 
@@ -28,11 +28,11 @@ export function TrialLoadingScreen({ onLoaded, sceneReady }: Props) {
     if (total === 0 && !active && loaded === 0 && sceneReady) {
       const t = setTimeout(() => {
         if (progress === 0 && !active && total === 0 && sceneReady) {
-           setFade(true)
-           setTimeout(() => {
-             setVisible(false)
-             onLoaded()
-           }, 500)
+          setFade(true)
+          setTimeout(() => {
+            setVisible(false)
+            onLoaded()
+          }, 500)
         }
       }, 2000)
       return () => clearTimeout(t)
@@ -88,37 +88,37 @@ export function TrialLoadingScreen({ onLoaded, sceneReady }: Props) {
 
       <div className="tls-container">
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ width: '100%', height: '2px', background: 'rgba(212,175,55,0.30)' }} />
-            <div style={{ width: '100%', height: '1px', background: 'rgba(212,175,55,0.15)' }} />
+          <div style={{ width: '100%', height: '2px', background: 'rgba(212,175,55,0.30)' }} />
+          <div style={{ width: '100%', height: '1px', background: 'rgba(212,175,55,0.15)' }} />
         </div>
-        
+
         <span style={{ fontSize: '40px', color: '#d4af37', opacity: 0.7, lineHeight: 1 }}>⚖</span>
         <h1 style={{ margin: 0, fontSize: '38px', letterSpacing: '5px', fontWeight: '700', fontFamily: '"Cinzel", Georgia, serif', color: '#e8e4d8' }}>
-            OFFICIAL CASE DOCKET
+          OFFICIAL CASE DOCKET
         </h1>
         <p style={{ margin: 0, fontSize: '13px', letterSpacing: '7px', color: '#d4af37', fontFamily: '"Cinzel", serif', opacity: 0.65, marginBottom: '4px' }}>
-            INITIALIZING COURTROOM
+          INITIALIZING COURTROOM
         </p>
 
         <div className="tls-spinner" style={{ marginTop: '20px' }} />
-        
+
         <p style={{ margin: 0, fontSize: '17px', letterSpacing: '4px', fontFamily: '"Cinzel", serif', color: '#e8e4d8', fontWeight: '600' }}>
-            LOADING ASSETS
+          LOADING ASSETS
         </p>
         <p style={{ margin: 0, fontSize: '20px', color: '#7a7670', fontStyle: 'italic' }}>
-            {Math.round(progress)}% — {loaded} / {total} files
+          {Math.round(progress)}% — {loaded} / {total} files
         </p>
         <div style={{ minHeight: '20px' }}>
           {item && (
-              <p style={{ margin: 0, fontSize: '14px', color: '#7a7670', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {item}
-              </p>
+            <p style={{ margin: 0, fontSize: '14px', color: '#7a7670', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item}
+            </p>
           )}
         </div>
 
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column-reverse', gap: '4px', marginTop: '18px' }}>
-            <div style={{ width: '100%', height: '2px', background: 'rgba(212,175,55,0.30)' }} />
-            <div style={{ width: '100%', height: '1px', background: 'rgba(212,175,55,0.15)' }} />
+          <div style={{ width: '100%', height: '2px', background: 'rgba(212,175,55,0.30)' }} />
+          <div style={{ width: '100%', height: '1px', background: 'rgba(212,175,55,0.15)' }} />
         </div>
       </div>
     </div>

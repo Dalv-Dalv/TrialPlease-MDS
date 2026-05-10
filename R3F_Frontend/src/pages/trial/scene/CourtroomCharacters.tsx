@@ -60,29 +60,29 @@ export function CourtroomCharacters({
       return filtered[Math.floor(rng() * filtered.length)];
     }
 
-    let lastDef: CharacterModel | undefined = undefined;
-    const defensePlacements = DEFENSE_SEATS.slice(0, defenseModels.length).map((pos, i) => {
-      const model = pickModel(defenseModels, lastDef);
-      lastDef = model;
-      return {
+    const defensePlacements = DEFENSE_SEATS.slice(0, defenseModels.length).reduce<{ lastDef: CharacterModel | undefined, arr: { model: CharacterModel, role: CharacterRole, position: [number, number, number], rotation: [number, number, number] }[] }>((acc, pos, i) => {
+      const model = pickModel(defenseModels, acc.lastDef);
+      acc.arr.push({
         model,
         role: `defense${i + 1}` as CharacterRole,
         position: pos as [number, number, number],
         rotation: [0, Math.PI, 0] as [number, number, number] // face -Z
-      };
-    });
+      });
+      acc.lastDef = model;
+      return acc;
+    }, { lastDef: undefined, arr: [] }).arr;
 
-    let lastPros: CharacterModel | undefined = undefined;
-    const prosecutionPlacements = PROSECUTION_SEATS.slice(0, prosecutionModels.length).map((pos, i) => {
-      const model = pickModel(prosecutionModels, lastPros);
-      lastPros = model;
-      return {
+    const prosecutionPlacements = PROSECUTION_SEATS.slice(0, prosecutionModels.length).reduce<{ lastPros: CharacterModel | undefined, arr: { model: CharacterModel, role: CharacterRole, position: [number, number, number], rotation: [number, number, number] }[] }>((acc, pos, i) => {
+      const model = pickModel(prosecutionModels, acc.lastPros);
+      acc.arr.push({
         model,
         role: `prosecution${i + 1}` as CharacterRole,
         position: pos as [number, number, number],
         rotation: [0, Math.PI, 0] as [number, number, number] // face -Z
-      };
-    });
+      });
+      acc.lastPros = model;
+      return acc;
+    }, { lastPros: undefined, arr: [] }).arr;
 
     const spectators: { model: CharacterModel, role: CharacterRole, position: [number, number, number], rotation: [number, number, number] }[] = [];
 

@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ username, token: data.token })
   }, [])
 
-  const register = useCallback(async (username: string, password: string) => {
+  const register = useCallback(async (_username: string, _password: string) => {
     // For now, registration is not implemented on the backend.
     throw new Error('Registration not implemented yet.')
   }, [])
