@@ -68,10 +68,16 @@ The JSON structure must be as follows:
 {{
   "action": "statement" or "objection",
   "reason": "If objection, provide reason like 'hearsay', 'leading', 'speculation', etc. Otherwise null.",
-  "dialogue": "Your statement or the dialogue for your objection."
+  "dialogue": "Your statement or the dialogue for your objection, wrapped in <speak> tags."
 }}
 
 Your dialogue reply must not exceed 500 characters. Make sure to space out your paragraphs on new lines if you have multiple.
+Crucially, you MUST use SSML tags to convey your emotion, confidence, and pacing. 
+Wrap the entire text in <speak>...</speak>. 
+Use <break time="Xms"/> for dramatic pauses. Break times must NOT exceed 100ms in the middle of sentences, and can be up to 200ms between sentences. Do NOT place a break after every comma; commas already add a natural pause, so only use breaks after commas if absolutely necessary for extreme dramatic effect.
+Do NOT use literal ellipsis ("...") just because you added a break tag. Keep the text punctuation clean.
+Use <prosody pitch="high/low" rate="fast/slow">...</prosody> for tonal shifts.
+Use <emphasis>...</emphasis> to stress important words, but use it SPARINGLY (only 1 or 2 words per reply). Do NOT use asterisks (*) or any other symbol for emphasis.
 
 Here are your case details:
 {json.dumps(case_json)}
@@ -79,8 +85,9 @@ Here are your case details:
 Here are the spoken statements from the case already:
 {json.dumps(spoken_statements)}
 '''
-    
-  return getAgentJsonAnswer(prompt)
+  ans = getAgentJsonAnswer(prompt)
+  print(ans)
+  return ans
 
 def getAgentDefendentReply(case_json, spoken_statements, confidence_level="normal"):
  
@@ -96,10 +103,16 @@ The JSON structure must be as follows:
 {{
   "action": "statement" or "objection",
   "reason": "If objection, provide reason like 'hearsay', 'leading', 'speculation', etc. Otherwise null.",
-  "dialogue": "Your statement or the dialogue for your objection."
+  "dialogue": "Your statement or the dialogue for your objection, wrapped in <speak> tags."
 }}
 
 Your dialogue reply must not exceed 500 characters. Make sure to space out your paragraphs on new lines if you have multiple.
+Crucially, you MUST use SSML tags to convey your emotion, confidence, and pacing. 
+Wrap the entire text in <speak>...</speak>. 
+Use <break time="Xms"/> for dramatic pauses. Break times must NOT exceed 100ms in the middle of sentences, and can be up to 200ms between sentences. Do NOT place a break after every comma; commas already add a natural pause, so only use breaks after commas if absolutely necessary for extreme dramatic effect.
+Do NOT use literal ellipsis ("...") just because you added a break tag. Keep the text punctuation clean.
+Use <prosody pitch="high/low" rate="fast/slow">...</prosody> for tonal shifts.
+Use <emphasis>...</emphasis> to stress important words, but use it SPARINGLY (only 1 or 2 words per reply). Do NOT use asterisks (*) for emphasis.
 
 Here are your case details:
 {json.dumps(case_json)}
@@ -107,7 +120,9 @@ Here are your case details:
 Here are the spoken statements from the case already:
 ''' + json.dumps(spoken_statements)
 
-  return getAgentJsonAnswer(prompt)
+  ans = getAgentJsonAnswer(prompt)
+  print(ans)
+  return ans
 
 def getWitnessReply(case_json, witness_data, lawyer_question, spoken_statements):
   prompt = f'''

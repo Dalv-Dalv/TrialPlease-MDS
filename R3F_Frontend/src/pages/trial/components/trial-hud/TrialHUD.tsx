@@ -13,11 +13,13 @@ import type { Side } from '../../../../store/flow-store/types'
 import { useLawyers } from '../../../../store/lawyer-store/lawyerStore'
 import { useCaseGenerator } from '../../../../store/case-generator-store/caseGeneratorContext'
 import { HUD_STRINGS, phaseLabel } from '../../../../utils/strings'
+import { setGlobalSpeechRate } from '../../../../utils/speechSynthesis'
 import './TrialHUD.css'
 
 export function TrialHUD() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(true)
   const [isCardOpen, setIsCardOpen] = useState(true)
+  const [speechRate, setSpeechRateLocal] = useState(1.0)
   const phase = useFlow((s) => s.phase)
   const activeSpeaker = useFlow((s) => s.activeSpeaker)
   const currentEvidenceIndex = useFlow((s) => s.currentEvidenceIndex)
@@ -103,6 +105,12 @@ export function TrialHUD() {
     return () => window.removeEventListener('keydown', onKey)
   }, [showAdvance, isThinking])
 
+  const handleSpeechRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rate = parseFloat(e.target.value)
+    setSpeechRateLocal(rate)
+    setGlobalSpeechRate(rate)
+  }
+
   return (
     <div className="trial-hud" aria-live="polite">
       <div className="trial-hud-phase">
@@ -140,7 +148,10 @@ export function TrialHUD() {
                     >
                       {HUD_STRINGS.speaker[item.side]}
                     </span>
-                    <span className="trial-hud-history-text">{item.text}</span>
+                    <span
+                      className="trial-hud-history-text"
+                      dangerouslySetInnerHTML={{ __html: item.text }}
+                    />
                   </div>
                 ))}
               </div>
@@ -176,9 +187,12 @@ export function TrialHUD() {
           </div>
 
           {isCardOpen && (
-            <p className={`trial-hud-speech ${speakerState?.isThinking ? 'trial-hud-speech--thinking' : ''}`}>
-              {speechText ?? (phase === 'pre_trial' ? HUD_STRINGS.speech.preTrialHint : HUD_STRINGS.speech.empty)}
-            </p>
+            <p
+              className={`trial-hud-speech ${speakerState?.isThinking ? 'trial-hud-speech--thinking' : ''}`}
+              dangerouslySetInnerHTML={{
+                __html: speechText ?? (phase === 'pre_trial' ? HUD_STRINGS.speech.preTrialHint : HUD_STRINGS.speech.empty)
+              }}
+            />
           )}
 
           {showRuling && (
@@ -244,6 +258,21 @@ export function TrialHUD() {
               </button>
             </div>
           )}
+
+          {/* Speech Rate Control */}
+          <div className="trial-hud-speech-rate">
+            <label htmlFor="speech-rate-slider">Speech Rate: {speechRate.toFixed(1)}x</label>
+            <input
+              id="speech-rate-slider"
+              type="range"
+              min="0.5"
+              max="2.5"
+              step="0.1"
+              value={speechRate}
+              onChange={handleSpeechRateChange}
+              className="trial-hud-slider"
+            />
+          </div>
         </div>
       </div>
 

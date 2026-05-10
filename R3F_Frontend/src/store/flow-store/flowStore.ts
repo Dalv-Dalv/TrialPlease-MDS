@@ -14,6 +14,7 @@ import type {
 } from './types'
 // TODO: replace mock imports with real backend calls once the AI service is ready.
 import { mockLawyerAction, resetMockLawyerAction } from '../../test/flow'
+import { playSSML, stopSpeech, formatSSMLForUI, resetVoices } from '../../utils/speechSynthesis'
 
 const initialState = {
   phase: 'pre_trial' as Phase,
@@ -146,19 +147,22 @@ async function fetchDebrief(caseId: number, verdict: string): Promise<DebriefRes
 /** Set the lawyer side into "thinking" — clears prior utterance so the HUD
  *  shows "..." immediately instead of the previous speech. */
 function beginThinking(side: Side) {
+  stopSpeech() // Stop any current speech when thinking starts
   useLawyers.getState().setUtterance(side, null)
   useLawyers.getState().setThinking(side, true)
 }
 
 /** Commit a freshly-spoken utterance: clear thinking, store text, push to
  *  the recent-speech ring buffer for the HUD. */
-function commitSpeech(side: Side, text: string) {
+function commitSpeech(side: Side, rawText: string) {
   const id = newId()
+  const uiText = formatSSMLForUI(rawText)
   useLawyers.getState().setThinking(side, false)
-  useLawyers.getState().setUtterance(side, text)
+  useLawyers.getState().setUtterance(side, uiText)
   useFlow.setState((s) => ({
-    recentSpeech: [...s.recentSpeech, { id, side, text }].slice(-RECENT_SPEECH_MAX),
+    recentSpeech: [...s.recentSpeech, { id, side, text: uiText }].slice(-RECENT_SPEECH_MAX),
   }))
+  playSSML(rawText, side)
 }
 
 /** Clear the thinking flag without committing speech (used on objections). */
@@ -189,6 +193,7 @@ export const useFlow = create<FlowState>((set, get) => ({
     advanceInProgress = false
     resetMockLawyerAction()
     useLawyers.getState().reset()
+    resetVoices()
     set({
       ...initialState,
       caseId: caseInfo.id,
@@ -280,13 +285,14 @@ export const useFlow = create<FlowState>((set, get) => ({
       else endThinking(speaker)
 
       // ── Append action (Phase/Speaker transition deferred to next turn) ──
+      const strippedText = text ? formatSSMLForUI(text) : ''
       if (currentFlow.phase === 'opening_prosecution' || currentFlow.phase === 'opening_defense') {
         get().appendAction({
           id: newId(),
           ts: Date.now(),
           kind: 'opening_statement',
           side: speaker,
-          text,
+          text: strippedText,
         })
       } else if (currentFlow.phase === 'closing_prosecution' || currentFlow.phase === 'closing_defense') {
         get().appendAction({
@@ -294,7 +300,7 @@ export const useFlow = create<FlowState>((set, get) => ({
           ts: Date.now(),
           kind: 'closing_statement',
           side: speaker,
-          text,
+          text: strippedText,
         })
       } else if (currentFlow.phase === 'evidence_debate' && evidenceName) {
         if (!text) {
@@ -306,7 +312,7 @@ export const useFlow = create<FlowState>((set, get) => ({
             kind: 'evidence_argument',
             side: speaker,
             evidenceName,
-            text,
+            text: strippedText,
           })
           // New material on the table — opponent gets a fresh chance to rebut.
           set((s) => ({
