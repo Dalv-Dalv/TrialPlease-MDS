@@ -169,10 +169,6 @@
   color: var(--color-accent);
 }
 
-.trial-hud-history-text {
-  /* removed flex: 1 since parent is flex-column */
-}
-
 .trial-hud-speaker {
   display: flex;
   align-items: center;

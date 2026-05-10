@@ -153,27 +153,27 @@ export function TrialHUD() {
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="trial-hud-card-header">
-            {speakerName ? (
-              <div className="trial-hud-speaker">
-                <span className={`trial-hud-speaker-tag trial-hud-speaker-tag--${speakerSide ?? 'judge'}`}>
-                  {speakerTagLabel}
-                </span>
-                <span className="trial-hud-speaker-name">{speakerName}</span>
-              </div>
-            ) : (
-              <span />
-            )}
-            <button
-              type="button"
-              className="trial-hud-toggle"
-              onClick={() => setIsCardOpen((open) => !open)}
-              aria-label={isCardOpen ? 'Collapse current speech' : 'Expand current speech'}
-              aria-expanded={isCardOpen}
-            >
-              {isCardOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-            </button>
-          </div>
+          {phase !== 'pre_trial' && (
+            <div className="trial-hud-card-header">
+              {speakerName && (
+                <div className="trial-hud-speaker">
+                  <span className={`trial-hud-speaker-tag trial-hud-speaker-tag--${speakerSide ?? 'judge'}`}>
+                    {speakerTagLabel}
+                  </span>
+                  <span className="trial-hud-speaker-name">{speakerName}</span>
+                </div>
+              )}
+              <button
+                type="button"
+                className="trial-hud-toggle"
+                onClick={() => setIsCardOpen((open) => !open)}
+                aria-label={isCardOpen ? 'Collapse current speech' : 'Expand current speech'}
+                aria-expanded={isCardOpen}
+              >
+                {isCardOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </button>
+            </div>
+          )}
 
           {isCardOpen && (
             <p className={`trial-hud-speech ${speakerState?.isThinking ? 'trial-hud-speech--thinking' : ''}`}>
