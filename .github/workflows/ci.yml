@@ -57,4 +57,3 @@ jobs:
         run: |
           cd R3F_Frontend
           npm run lint
-        continue-on-error: true

@@ -1,4 +1,4 @@
-import React, { useMemo, useLayoutEffect, useEffect, useRef, useState } from 'react'
+import React, { useMemo, useLayoutEffect, useEffect, useRef, useState, type JSX } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { useGraph } from '@react-three/fiber'
 import { SkeletonUtils } from 'three-stdlib'
