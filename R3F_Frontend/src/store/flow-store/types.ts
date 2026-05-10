@@ -61,6 +61,13 @@ export type SpeechEntry = {
   text: string
 }
 
+export type PrefetchState = {
+  phase: Phase
+  speaker: Side
+  evidenceIndex: number | null
+  promise: Promise<LawyerActionResponse>
+}
+
 export type FlowState = {
   // === phase machine ===
   phase: Phase
@@ -78,6 +85,9 @@ export type FlowState = {
 
   /** Last 8 spoken responses (statements only), newest at the end. */
   recentSpeech: SpeechEntry[]
+
+  // === prefetching ===
+  prefetch: PrefetchState | null
 
   // === user-callable trial control ===
   /** Run one turn for the current speaker. Statement or objection auto-routed. */
@@ -100,4 +110,5 @@ export type FlowState = {
   setActiveSpeaker: (s: Side | 'judge' | null) => void
   appendAction: (a: TrialAction) => void
   passEvidence: (side: Side, evidenceName: string) => void
+  prefetchNextTurn: () => void
 }

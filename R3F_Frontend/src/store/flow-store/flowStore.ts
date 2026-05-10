@@ -27,6 +27,7 @@ const initialState = {
   confidence: { defense: 0.5, prosecution: 0.5 },
   debrief: null as DebriefResult | null,
   recentSpeech: [] as { id: string; side: Side; text: string }[],
+  prefetch: null,
 }
 
 const RECENT_SPEECH_MAX = 8
@@ -179,6 +180,59 @@ function lastSpokenBy(transcript: TrialAction[], side: Side): SpokenAction | nul
   return null
 }
 
+function computeNextState(flow: FlowState, totalEvidenceItems: number): Partial<FlowState> {
+  const patch: Partial<FlowState> = {}
+  const lastAction = flow.transcript[flow.transcript.length - 1]
+  if (!lastAction) return patch
+
+  if (
+    (flow.phase === 'opening_prosecution' && lastAction.kind === 'opening_statement' && lastAction.side === 'prosecution') ||
+    (flow.phase === 'opening_defense' && lastAction.kind === 'opening_statement' && lastAction.side === 'defense') ||
+    (flow.phase === 'closing_prosecution' && lastAction.kind === 'closing_statement' && lastAction.side === 'prosecution') ||
+    (flow.phase === 'closing_defense' && lastAction.kind === 'closing_statement' && lastAction.side === 'defense')
+  ) {
+    const idx = phaseOrder.indexOf(flow.phase)
+    const next = phaseOrder[idx + 1] ?? 'concluded'
+    patch.phase = next
+
+    if (next === 'opening_defense') patch.activeSpeaker = 'defense'
+    else if (next === 'evidence_debate') {
+      patch.activeSpeaker = 'prosecution'
+      patch.currentEvidenceIndex = 0
+      patch.evidencePassed = { defense: false, prosecution: false }
+    } else if (next === 'closing_prosecution') {
+      patch.activeSpeaker = 'prosecution'
+      patch.currentEvidenceIndex = null
+      patch.evidencePassed = { defense: false, prosecution: false }
+    } else if (next === 'closing_defense') patch.activeSpeaker = 'defense'
+    else if (next === 'verdict') {
+      patch.activeSpeaker = 'judge'
+      patch.awaitingUser = 'verdict'
+    } else if (next === 'concluded') patch.activeSpeaker = null
+
+  } else if (flow.phase === 'evidence_debate') {
+    if (lastAction.kind === 'evidence_argument' || lastAction.kind === 'pass_evidence') {
+      if (flow.evidencePassed.defense && flow.evidencePassed.prosecution) {
+        const idx = flow.currentEvidenceIndex ?? 0
+        if (idx + 1 < totalEvidenceItems) {
+          patch.currentEvidenceIndex = idx + 1
+          patch.evidencePassed = { defense: false, prosecution: false }
+          patch.activeSpeaker = 'prosecution'
+        } else {
+          patch.phase = 'closing_prosecution'
+          patch.activeSpeaker = 'prosecution'
+          patch.currentEvidenceIndex = null
+          patch.evidencePassed = { defense: false, prosecution: false }
+        }
+      } else if (lastAction.side === flow.activeSpeaker) {
+        patch.activeSpeaker = opposite(flow.activeSpeaker)
+      }
+    }
+  }
+
+  return patch
+}
+
 // === Store ==================================================================
 
 export const useFlow = create<FlowState>((set, get) => ({
@@ -216,25 +270,9 @@ export const useFlow = create<FlowState>((set, get) => ({
     const lastAction = flow.transcript[flow.transcript.length - 1]
 
     if (lastAction) {
-      if (
-        (flow.phase === 'opening_prosecution' && lastAction.kind === 'opening_statement' && lastAction.side === 'prosecution') ||
-        (flow.phase === 'opening_defense' && lastAction.kind === 'opening_statement' && lastAction.side === 'defense') ||
-        (flow.phase === 'closing_prosecution' && lastAction.kind === 'closing_statement' && lastAction.side === 'prosecution') ||
-        (flow.phase === 'closing_defense' && lastAction.kind === 'closing_statement' && lastAction.side === 'defense')
-      ) {
-        get().advancePhase()
-      } else if (flow.phase === 'evidence_debate') {
-        if (lastAction.kind === 'evidence_argument' || lastAction.kind === 'pass_evidence') {
-          const s = get()
-          if (s.evidencePassed.defense && s.evidencePassed.prosecution) {
-            const idx = s.currentEvidenceIndex ?? 0
-            const total = currentCase?.evidence_items.length ?? 0
-            if (idx + 1 < total) get().advanceEvidence()
-            else get().advancePhase()
-          } else if (lastAction.side === s.activeSpeaker) {
-            get().setActiveSpeaker(opposite(s.activeSpeaker))
-          }
-        }
+      const patch = computeNextState(flow, currentCase?.evidence_items.length ?? 0)
+      if (Object.keys(patch).length > 0) {
+        set(patch)
       }
     }
 
@@ -257,14 +295,27 @@ export const useFlow = create<FlowState>((set, get) => ({
           ? (currentCase?.evidence_items[currentFlow.currentEvidenceIndex]?.name ?? null)
           : null
 
-      const response = await fetchLawyerAction(
-        currentFlow.caseId ?? 0,
-        speaker,
-        currentFlow.confidence[speaker],
-        currentFlow.phase,
-        evidenceName,
-        currentFlow.transcript,
-      )
+      let response: LawyerActionResponse
+      const pf = currentFlow.prefetch
+      if (
+        pf &&
+        pf.phase === currentFlow.phase &&
+        pf.speaker === speaker &&
+        pf.evidenceIndex === currentFlow.currentEvidenceIndex
+      ) {
+        console.debug('[flow] using prefetched lawyer_action response')
+        response = await pf.promise
+        set({ prefetch: null })
+      } else {
+        response = await fetchLawyerAction(
+          currentFlow.caseId ?? 0,
+          speaker,
+          currentFlow.confidence[speaker],
+          currentFlow.phase,
+          evidenceName,
+          currentFlow.transcript,
+        )
+      }
       console.debug('[flow] lawyer_action response', { phase: currentFlow.phase, speaker, response })
 
       if (response.action === 'objection') {
@@ -316,6 +367,7 @@ export const useFlow = create<FlowState>((set, get) => ({
       }
     } finally {
       advanceInProgress = false
+      setTimeout(() => get().prefetchNextTurn(), 0)
     }
   },
 
@@ -442,6 +494,44 @@ export const useFlow = create<FlowState>((set, get) => ({
       ],
       evidencePassed: { ...s.evidencePassed, [side]: true },
     })),
+
+  prefetchNextTurn: () => {
+    const flow = get()
+    if (flow.phase === 'verdict' || flow.phase === 'concluded' || flow.awaitingUser) return
+
+    const totalEvidence = currentCase?.evidence_items.length ?? 0
+    const patch = computeNextState(flow, totalEvidence)
+
+    const nextPhase = patch.phase ?? flow.phase
+    const nextSpeaker = patch.activeSpeaker ?? flow.activeSpeaker
+    const nextEvidenceIndex = patch.currentEvidenceIndex !== undefined ? patch.currentEvidenceIndex : flow.currentEvidenceIndex
+
+    if (nextPhase === 'verdict' || nextPhase === 'concluded') return
+    if (nextSpeaker !== 'defense' && nextSpeaker !== 'prosecution') return
+
+    const evidenceName =
+      nextPhase === 'evidence_debate' && nextEvidenceIndex != null
+        ? (currentCase?.evidence_items[nextEvidenceIndex]?.name ?? null)
+        : null
+
+    const promise = fetchLawyerAction(
+      flow.caseId ?? 0,
+      nextSpeaker,
+      flow.confidence[nextSpeaker],
+      nextPhase,
+      evidenceName,
+      flow.transcript // transcript already has the latest action appended
+    )
+
+    set({
+      prefetch: {
+        phase: nextPhase,
+        speaker: nextSpeaker,
+        evidenceIndex: nextEvidenceIndex,
+        promise,
+      },
+    })
+  },
 }))
 
 export const newActionId = newId
