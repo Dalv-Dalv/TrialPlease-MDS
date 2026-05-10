@@ -127,33 +127,50 @@
 
 .trial-hud-history-item {
   display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
+  flex-direction: column;
+  gap: 0.2rem;
   font-size: 0.85rem;
   line-height: 1.4;
   color: var(--color-text-muted);
   opacity: 0.8;
+  max-width: 85%;
+}
+
+.trial-hud-history-item--defense {
+  align-self: flex-end;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.trial-hud-history-item--prosecution {
+  align-self: flex-start;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .trial-hud-history-tag {
   flex-shrink: 0;
-  font-size: 0.6rem;
-  letter-spacing: 0.18em;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   font-family: 'Cinzel', Georgia, serif;
-  min-width: 90px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
 }
 
 .trial-hud-history-tag--prosecution {
+  border-color: var(--color-primary-soft);
   color: var(--color-primary-soft);
 }
 
 .trial-hud-history-tag--defense {
+  border-color: var(--color-accent);
   color: var(--color-accent);
 }
 
 .trial-hud-history-text {
-  flex: 1;
+  /* removed flex: 1 since parent is flex-column */
 }
 
 .trial-hud-speaker {

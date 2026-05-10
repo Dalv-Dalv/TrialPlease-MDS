@@ -134,7 +134,7 @@ export function TrialHUD() {
             {isHistoryOpen && (
               <div className="trial-hud-history-list">
                 {historyEntries.map((item) => (
-                  <div key={item.id} className="trial-hud-history-item">
+                  <div key={item.id} className={`trial-hud-history-item trial-hud-history-item--${item.side}`}>
                     <span
                       className={`trial-hud-history-tag trial-hud-history-tag--${item.side}`}
                     >
@@ -148,103 +148,103 @@ export function TrialHUD() {
           </div>
         )}
 
-      <div
-        className="trial-hud-card"
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        <div className="trial-hud-card-header">
-          {speakerName ? (
-            <div className="trial-hud-speaker">
-              <span className={`trial-hud-speaker-tag trial-hud-speaker-tag--${speakerSide ?? 'judge'}`}>
-                {speakerTagLabel}
-              </span>
-              <span className="trial-hud-speaker-name">{speakerName}</span>
-            </div>
-          ) : (
-            <span />
-          )}
-          <button
-            type="button"
-            className="trial-hud-toggle"
-            onClick={() => setIsCardOpen((open) => !open)}
-            aria-label={isCardOpen ? 'Collapse current speech' : 'Expand current speech'}
-            aria-expanded={isCardOpen}
-          >
-            {isCardOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-          </button>
-        </div>
-
-        {isCardOpen && (
-          <p className={`trial-hud-speech ${speakerState?.isThinking ? 'trial-hud-speech--thinking' : ''}`}>
-            {speechText ?? (phase === 'pre_trial' ? HUD_STRINGS.speech.preTrialHint : HUD_STRINGS.speech.empty)}
-          </p>
-        )}
-
-        {showRuling && (
-          <div className="trial-hud-ruling">
-            <div className="trial-hud-ruling-label">
-              <Gavel size={14} />
-              <span>
-                {HUD_STRINGS.ruling.prefix}{' '}
-                <strong>{HUD_STRINGS.speaker[pendingObjection.side]}</strong> {HUD_STRINGS.ruling.separator}{' '}
-                <em>{pendingObjection.reason}</em>
-              </span>
-            </div>
-            <div className="trial-hud-actions">
-              <button type="button" className="trial-hud-btn trial-hud-btn--sustain" onClick={onSustain}>
-                <ShieldCheck size={16} />
-                {HUD_STRINGS.ruling.sustain}
-              </button>
-              <button type="button" className="trial-hud-btn trial-hud-btn--overrule" onClick={onOverrule}>
-                <ShieldX size={16} />
-                {HUD_STRINGS.ruling.overrule}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showVerdict && (
-          <div className="trial-hud-verdict">
-            <div className="trial-hud-verdict-prompt">{HUD_STRINGS.verdict.prompt}</div>
-            <div className="trial-hud-actions trial-hud-actions--wrap">
-              {caseInfo!.possible_choices.map((choice) => (
-                <button
-                  key={choice.verdict_option}
-                  type="button"
-                  className="trial-hud-btn trial-hud-btn--primary"
-                  onClick={() => onVerdict(choice.verdict_option)}
-                >
-                  {choice.verdict_option}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {showStart && (
-          <div className="trial-hud-actions">
-            <button type="button" className="trial-hud-btn trial-hud-btn--primary" onClick={onStart}>
-              <Play size={16} />
-              {HUD_STRINGS.start.button}
-            </button>
-          </div>
-        )}
-
-        {showAdvance && (
-          <div className="trial-hud-actions">
+        <div
+          className="trial-hud-card"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="trial-hud-card-header">
+            {speakerName ? (
+              <div className="trial-hud-speaker">
+                <span className={`trial-hud-speaker-tag trial-hud-speaker-tag--${speakerSide ?? 'judge'}`}>
+                  {speakerTagLabel}
+                </span>
+                <span className="trial-hud-speaker-name">{speakerName}</span>
+              </div>
+            ) : (
+              <span />
+            )}
             <button
               type="button"
-              className="trial-hud-btn trial-hud-btn--primary"
-              onClick={onAdvance}
-              disabled={isThinking}
+              className="trial-hud-toggle"
+              onClick={() => setIsCardOpen((open) => !open)}
+              aria-label={isCardOpen ? 'Collapse current speech' : 'Expand current speech'}
+              aria-expanded={isCardOpen}
             >
-              <ChevronRight size={16} />
-              {isThinking ? HUD_STRINGS.advance.waiting : HUD_STRINGS.advance.button}
+              {isCardOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
             </button>
           </div>
-        )}
-      </div>
+
+          {isCardOpen && (
+            <p className={`trial-hud-speech ${speakerState?.isThinking ? 'trial-hud-speech--thinking' : ''}`}>
+              {speechText ?? (phase === 'pre_trial' ? HUD_STRINGS.speech.preTrialHint : HUD_STRINGS.speech.empty)}
+            </p>
+          )}
+
+          {showRuling && (
+            <div className="trial-hud-ruling">
+              <div className="trial-hud-ruling-label">
+                <Gavel size={14} />
+                <span>
+                  {HUD_STRINGS.ruling.prefix}{' '}
+                  <strong>{HUD_STRINGS.speaker[pendingObjection.side]}</strong> {HUD_STRINGS.ruling.separator}{' '}
+                  <em>{pendingObjection.reason}</em>
+                </span>
+              </div>
+              <div className="trial-hud-actions">
+                <button type="button" className="trial-hud-btn trial-hud-btn--sustain" onClick={onSustain}>
+                  <ShieldCheck size={16} />
+                  {HUD_STRINGS.ruling.sustain}
+                </button>
+                <button type="button" className="trial-hud-btn trial-hud-btn--overrule" onClick={onOverrule}>
+                  <ShieldX size={16} />
+                  {HUD_STRINGS.ruling.overrule}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showVerdict && (
+            <div className="trial-hud-verdict">
+              <div className="trial-hud-verdict-prompt">{HUD_STRINGS.verdict.prompt}</div>
+              <div className="trial-hud-actions trial-hud-actions--wrap">
+                {caseInfo!.possible_choices.map((choice) => (
+                  <button
+                    key={choice.verdict_option}
+                    type="button"
+                    className="trial-hud-btn trial-hud-btn--primary"
+                    onClick={() => onVerdict(choice.verdict_option)}
+                  >
+                    {choice.verdict_option}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showStart && (
+            <div className="trial-hud-actions">
+              <button type="button" className="trial-hud-btn trial-hud-btn--primary" onClick={onStart}>
+                <Play size={16} />
+                {HUD_STRINGS.start.button}
+              </button>
+            </div>
+          )}
+
+          {showAdvance && (
+            <div className="trial-hud-actions">
+              <button
+                type="button"
+                className="trial-hud-btn trial-hud-btn--primary"
+                onClick={onAdvance}
+                disabled={isThinking}
+              >
+                <ChevronRight size={16} />
+                {isThinking ? HUD_STRINGS.advance.waiting : HUD_STRINGS.advance.button}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {transcript.length > 0 && (
