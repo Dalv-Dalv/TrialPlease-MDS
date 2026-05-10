@@ -195,6 +195,7 @@ export const useFlow = create<FlowState>((set, get) => ({
       phase: 'opening_prosecution',
       activeSpeaker: 'prosecution',
     })
+    setTimeout(() => get().advanceTurn(), 0)
   },
 
   advanceTurn: async () => {
@@ -209,42 +210,66 @@ export const useFlow = create<FlowState>((set, get) => ({
       return
     }
 
-    const speaker = flow.activeSpeaker
-    if (speaker !== 'defense' && speaker !== 'prosecution') return
-
-    // Evidence-debate: if both sides have passed, advance evidence/phase first.
-    if (flow.phase === 'evidence_debate') {
-      if (flow.evidencePassed.defense && flow.evidencePassed.prosecution) {
-        const idx = flow.currentEvidenceIndex ?? 0
-        const total = currentCase?.evidence_items.length ?? 0
-        if (idx + 1 < total) get().advanceEvidence()
-        else get().advancePhase()
-        return
+    // --- 1. STATE TRANSITION ---
+    // The previous turn has finished and the user clicked Continue. 
+    // Advance the state based on the LAST action in the transcript BEFORE fetching the next action.
+    const lastAction = flow.transcript[flow.transcript.length - 1]
+    
+    if (lastAction) {
+      if (
+        (flow.phase === 'opening_prosecution' && lastAction.kind === 'opening_statement' && lastAction.side === 'prosecution') ||
+        (flow.phase === 'opening_defense' && lastAction.kind === 'opening_statement' && lastAction.side === 'defense') ||
+        (flow.phase === 'closing_prosecution' && lastAction.kind === 'closing_statement' && lastAction.side === 'prosecution') ||
+        (flow.phase === 'closing_defense' && lastAction.kind === 'closing_statement' && lastAction.side === 'defense')
+      ) {
+        get().advancePhase()
+      } else if (flow.phase === 'evidence_debate') {
+        if (lastAction.kind === 'evidence_argument' || lastAction.kind === 'pass_evidence') {
+          const s = get()
+          if (s.evidencePassed.defense && s.evidencePassed.prosecution) {
+            const idx = s.currentEvidenceIndex ?? 0
+            const total = currentCase?.evidence_items.length ?? 0
+            if (idx + 1 < total) get().advanceEvidence()
+            else get().advancePhase()
+          } else if (lastAction.side === s.activeSpeaker) {
+            get().setActiveSpeaker(opposite(s.activeSpeaker))
+          }
+        }
       }
     }
+
+    // Now, get the FRESH state after potential advancement
+    const currentFlow = get()
+    const speaker = currentFlow.activeSpeaker
+
+    if (currentFlow.phase === 'verdict' || currentFlow.phase === 'concluded') {
+      return
+    }
+
+    if (speaker !== 'defense' && speaker !== 'prosecution') return
 
     advanceInProgress = true
     // Show "..." immediately so the user gets feedback while the API is in flight.
     beginThinking(speaker)
     try {
       const evidenceName =
-        flow.phase === 'evidence_debate' && flow.currentEvidenceIndex != null
-          ? (currentCase?.evidence_items[flow.currentEvidenceIndex]?.name ?? null)
+        currentFlow.phase === 'evidence_debate' && currentFlow.currentEvidenceIndex != null
+          ? (currentCase?.evidence_items[currentFlow.currentEvidenceIndex]?.name ?? null)
           : null
 
       const response = await fetchLawyerAction(
-        flow.caseId ?? 0,
+        currentFlow.caseId ?? 0,
         speaker,
-        flow.confidence[speaker],
-        flow.phase,
+        currentFlow.confidence[speaker],
+        currentFlow.phase,
         evidenceName,
-        flow.transcript,
+        currentFlow.transcript,
       )
-      console.debug('[flow] lawyer_action response', { phase: flow.phase, speaker, response })
+      console.debug('[flow] lawyer_action response', { phase: currentFlow.phase, speaker, response })
 
       if (response.action === 'objection') {
         endThinking(speaker)
-        const target = lastSpokenBy(flow.transcript, opposite(speaker))
+        const target = lastSpokenBy(currentFlow.transcript, opposite(speaker))
         if (!target) return
         get().raiseObjection(speaker, response.reason, target.id)
         return
@@ -254,8 +279,8 @@ export const useFlow = create<FlowState>((set, get) => ({
       if (text) commitSpeech(speaker, text)
       else endThinking(speaker)
 
-      // ── Openings: exactly one turn per phase. Always advance afterwards. ──
-      if (flow.phase === 'opening_prosecution' || flow.phase === 'opening_defense') {
+      // ── Append action (Phase/Speaker transition deferred to next turn) ──
+      if (currentFlow.phase === 'opening_prosecution' || currentFlow.phase === 'opening_defense') {
         get().appendAction({
           id: newId(),
           ts: Date.now(),
@@ -263,12 +288,7 @@ export const useFlow = create<FlowState>((set, get) => ({
           side: speaker,
           text,
         })
-        get().advancePhase()
-        return
-      }
-
-      // ── Closings: same shape as openings. ──
-      if (flow.phase === 'closing_prosecution' || flow.phase === 'closing_defense') {
+      } else if (currentFlow.phase === 'closing_prosecution' || currentFlow.phase === 'closing_defense') {
         get().appendAction({
           id: newId(),
           ts: Date.now(),
@@ -276,30 +296,23 @@ export const useFlow = create<FlowState>((set, get) => ({
           side: speaker,
           text,
         })
-        get().advancePhase()
-        return
-      }
-
-      // ── Evidence debate: empty text ⇒ pass; otherwise just rotate. ──
-      if (flow.phase === 'evidence_debate' && evidenceName) {
+      } else if (currentFlow.phase === 'evidence_debate' && evidenceName) {
         if (!text) {
           get().passEvidence(speaker, evidenceName)
-          get().setActiveSpeaker(opposite(speaker))
-          return
+        } else {
+          get().appendAction({
+            id: newId(),
+            ts: Date.now(),
+            kind: 'evidence_argument',
+            side: speaker,
+            evidenceName,
+            text,
+          })
+          // New material on the table — opponent gets a fresh chance to rebut.
+          set((s) => ({
+            evidencePassed: { ...s.evidencePassed, [opposite(speaker)]: false },
+          }))
         }
-        get().appendAction({
-          id: newId(),
-          ts: Date.now(),
-          kind: 'evidence_argument',
-          side: speaker,
-          evidenceName,
-          text,
-        })
-        // New material on the table — opponent gets a fresh chance to rebut.
-        set((s) => ({
-          evidencePassed: { ...s.evidencePassed, [opposite(speaker)]: false },
-        }))
-        get().setActiveSpeaker(opposite(speaker))
       }
     } finally {
       advanceInProgress = false

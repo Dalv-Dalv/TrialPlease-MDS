@@ -134,7 +134,7 @@ export function TrialHUD() {
             {isHistoryOpen && (
               <div className="trial-hud-history-list">
                 {historyEntries.map((item) => (
-                  <div key={item.id} className="trial-hud-history-item">
+                  <div key={item.id} className={`trial-hud-history-item trial-hud-history-item--${item.side}`}>
                     <span
                       className={`trial-hud-history-tag trial-hud-history-tag--${item.side}`}
                     >
