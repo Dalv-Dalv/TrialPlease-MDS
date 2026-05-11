@@ -49,16 +49,25 @@ export type LawyerActionResponse =
 
 /** Response shape from `POST /api/cases/<id>/debrief/`. */
 export type DebriefResult = {
-  correct: boolean
+  verdict_correct: boolean
+  correct_verdict: string
   absolute_truth: string
-  score?: number
+  user_verdict: string
 }
 
 /** Compact entry kept in flow.recentSpeech for the HUD to render history. */
 export type SpeechEntry = {
   id: string
-  side: Side
+  side: Side | 'system'
   text: string
+}
+
+export type PrefetchState = {
+  phase: Phase
+  speaker: Side
+  evidenceIndex: number | null
+  promise: Promise<LawyerActionResponse>
+  transcriptLength: number
 }
 
 export type FlowState = {
@@ -78,6 +87,9 @@ export type FlowState = {
 
   /** Last 8 spoken responses (statements only), newest at the end. */
   recentSpeech: SpeechEntry[]
+
+  // === prefetching ===
+  prefetch: PrefetchState | null
 
   // === user-callable trial control ===
   /** Run one turn for the current speaker. Statement or objection auto-routed. */
@@ -100,4 +112,6 @@ export type FlowState = {
   setActiveSpeaker: (s: Side | 'judge' | null) => void
   appendAction: (a: TrialAction) => void
   passEvidence: (side: Side, evidenceName: string) => void
+  prefetchNextTurn: () => void
+  skipCurrentEvidence: () => void
 }

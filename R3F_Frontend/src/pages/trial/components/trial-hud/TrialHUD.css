@@ -148,6 +148,20 @@
   text-align: left;
 }
 
+.trial-hud-history-item--system {
+  align-self: center;
+  align-items: center;
+  text-align: center;
+  margin: 0.5rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px dashed var(--color-border);
+  padding-bottom: 0.2rem;
+  width: 100%;
+}
+
 .trial-hud-history-tag {
   flex-shrink: 0;
   font-size: 0.65rem;
@@ -172,6 +186,7 @@
 .trial-hud-history-text {
   white-space: pre-wrap;
 }
+
 
 .trial-hud-speaker {
   display: flex;

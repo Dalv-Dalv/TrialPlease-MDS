@@ -4,236 +4,264 @@ Command: npx gltfjsx@6.5.3 .\Final_Courtroom.glb --types
 */
 
 import * as THREE from 'three'
-import React, { type JSX, useLayoutEffect, useRef } from 'react' // Added useLayoutEffect
+import React, { type JSX, useLayoutEffect, useRef, useEffect } from 'react' // Added useLayoutEffect and useEffect
 import { useGLTF } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber' // Added useLoader
 import { EXRLoader, RGBELoader } from 'three-stdlib' // Added RGBELoader
 import type { GLTF } from 'three-stdlib'
 import { Gavel, type GavelHandle } from './Gavel'
 import { CourtroomCharacters } from './CourtroomCharacters'
+import { useFlow } from '../../../store/flow-store/flowStore'
+import { useTrialSceneAnimation } from './useTrialSceneAnimation'
 
 type GLTFResult = GLTF & {
-  nodes: {
-    LowChair: THREE.Mesh
-    Judge_RaisedPlatform: THREE.Mesh
-    Lectern: THREE.Mesh
-    Room_Divider: THREE.Mesh
-    Gallery_Seats: THREE.Mesh
-    Main_AboveThing: THREE.Mesh
-    InGodWeTrust: THREE.Mesh
-    Pillar: THREE.Mesh
-    Window: THREE.Mesh
-    Prisoner_Door: THREE.Mesh
-    Prisoner_Door_Handle: THREE.Mesh
-    Main_Doors: THREE.Mesh
-    MainDoors_PushBars: THREE.Mesh
-    Gavel_Handle: THREE.Mesh
-    Mesh_2: THREE.Mesh
-    Mesh_3: THREE.Mesh
-    Judge_Desk: THREE.Mesh
-    Clerks_Desk: THREE.Mesh
-    Prosecution_Desk: THREE.Mesh
-    Gavel_StrikingPlatform: THREE.Mesh
-    Lamp_Frame: THREE.Mesh
-    Lamp_Shade: THREE.Mesh
-    Defense_Desk: THREE.Mesh
-    LowChair001: THREE.Mesh
-    Prosecution_Chair1: THREE.Mesh
-    Pillar002: THREE.Mesh
-    Pillar003: THREE.Mesh
-    Pillar004: THREE.Mesh
-    Pillar005: THREE.Mesh
-    Pillar006: THREE.Mesh
-    Pillar008: THREE.Mesh
-    Pillar009: THREE.Mesh
-    Pillar010: THREE.Mesh
-    Pillar011: THREE.Mesh
-    Pillar007: THREE.Mesh
-    Pillar012: THREE.Mesh
-    Pillar014: THREE.Mesh
-    Pillar015: THREE.Mesh
-    Pillar016: THREE.Mesh
-    Main_Doors_AboveThing: THREE.Mesh
-    Prisoner_Door_AboveThing: THREE.Mesh
-    Pillar013: THREE.Mesh
-    Gallery_Seats001: THREE.Mesh
-    Gallery_Seats002: THREE.Mesh
-    Gallery_Seats003: THREE.Mesh
-    Gallery_Seats004: THREE.Mesh
-    Gallery_Seats005: THREE.Mesh
-    Prosecution_Chair2: THREE.Mesh
-    Defense_Chair2: THREE.Mesh
-    Defense_Chair1: THREE.Mesh
-    Floor: THREE.Mesh
-    Walls: THREE.Mesh
-    Walls_Brim: THREE.Mesh
-    Ceiling: THREE.Mesh
-  }
-  materials: {
-    Baked_Furniture: THREE.MeshStandardMaterial
-    Window: THREE.MeshStandardMaterial
-    DarkerWood_Shiny: THREE.MeshStandardMaterial
-    Gold: THREE.MeshStandardMaterial
-    LampPost: THREE.MeshStandardMaterial
-    LampShade: THREE.MeshStandardMaterial
-    Baked_Room: THREE.MeshStandardMaterial
-  }
-  animations: THREE.AnimationClip[]
+	nodes: {
+		LowChair: THREE.Mesh
+		Judge_RaisedPlatform: THREE.Mesh
+		Lectern: THREE.Mesh
+		Room_Divider: THREE.Mesh
+		Gallery_Seats: THREE.Mesh
+		Main_AboveThing: THREE.Mesh
+		InGodWeTrust: THREE.Mesh
+		Pillar: THREE.Mesh
+		Window: THREE.Mesh
+		Prisoner_Door: THREE.Mesh
+		Prisoner_Door_Handle: THREE.Mesh
+		Main_Doors: THREE.Mesh
+		MainDoors_PushBars: THREE.Mesh
+		Gavel_Handle: THREE.Mesh
+		Mesh_2: THREE.Mesh
+		Mesh_3: THREE.Mesh
+		Judge_Desk: THREE.Mesh
+		Clerks_Desk: THREE.Mesh
+		Prosecution_Desk: THREE.Mesh
+		Gavel_StrikingPlatform: THREE.Mesh
+		Lamp_Frame: THREE.Mesh
+		Lamp_Shade: THREE.Mesh
+		Defense_Desk: THREE.Mesh
+		LowChair001: THREE.Mesh
+		Prosecution_Chair1: THREE.Mesh
+		Pillar002: THREE.Mesh
+		Pillar003: THREE.Mesh
+		Pillar004: THREE.Mesh
+		Pillar005: THREE.Mesh
+		Pillar006: THREE.Mesh
+		Pillar008: THREE.Mesh
+		Pillar009: THREE.Mesh
+		Pillar010: THREE.Mesh
+		Pillar011: THREE.Mesh
+		Pillar007: THREE.Mesh
+		Pillar012: THREE.Mesh
+		Pillar014: THREE.Mesh
+		Pillar015: THREE.Mesh
+		Pillar016: THREE.Mesh
+		Main_Doors_AboveThing: THREE.Mesh
+		Prisoner_Door_AboveThing: THREE.Mesh
+		Pillar013: THREE.Mesh
+		Gallery_Seats001: THREE.Mesh
+		Gallery_Seats002: THREE.Mesh
+		Gallery_Seats003: THREE.Mesh
+		Gallery_Seats004: THREE.Mesh
+		Gallery_Seats005: THREE.Mesh
+		Prosecution_Chair2: THREE.Mesh
+		Defense_Chair2: THREE.Mesh
+		Defense_Chair1: THREE.Mesh
+		Floor: THREE.Mesh
+		Walls: THREE.Mesh
+		Walls_Brim: THREE.Mesh
+		Ceiling: THREE.Mesh
+	}
+	materials: {
+		Baked_Furniture: THREE.MeshStandardMaterial
+		Window: THREE.MeshStandardMaterial
+		DarkerWood_Shiny: THREE.MeshStandardMaterial
+		Gold: THREE.MeshStandardMaterial
+		LampPost: THREE.MeshStandardMaterial
+		LampShade: THREE.MeshStandardMaterial
+		Baked_Room: THREE.MeshStandardMaterial
+	}
+	animations: THREE.AnimationClip[]
 }
 
 export function TrialScene(props: JSX.IntrinsicElements['group']) {
-  const { nodes, materials } = useGLTF('/models/Final_Courtroom.glb') as unknown as GLTFResult
+	const { nodes, materials } = useGLTF('/models/Final_Courtroom.glb') as unknown as GLTFResult
 
-  const gavelRef = useRef<GavelHandle>(null)
+	const gavelRef = useRef<GavelHandle>(null)
 
-  // 1. Load the HDR files
-  const furnitureHdr = useLoader(EXRLoader, '/textures/Furniture_Bake_Final.exr')
-  const roomHdr = useLoader(EXRLoader, '/textures/Room_Bake_Final.exr')
-  // const furnitureHdr = useLoader(RGBELoader, '/textures/Furniture_Bake_Final.hdr')
-  // const roomHdr = useLoader(RGBELoader, '/textures/Room_Bake_Final.hdr')
+	const activeSpeaker = useFlow((s) => s.activeSpeaker)
+	const setRoleState = useTrialSceneAnimation((s) => s.setRoleState)
 
-  // 2. Apply the textures to your materials before they render
-  useLayoutEffect(() => {
-    const allMaterials = Object.values(materials)
+	useEffect(() => {
+		const timeouts: ReturnType<typeof setTimeout>[] = [];
 
-    allMaterials.forEach((mat) => {
-      mat.side = THREE.FrontSide // ✅ enable backface culling
-      mat.needsUpdate = true
-    })
+		if (activeSpeaker === 'prosecution') {
+			const delay = 1000 + Math.random() * 1000;
+			timeouts.push(setTimeout(() => setRoleState('prosecution2', 'sit_to_stand'), delay));
+		} else {
+			setRoleState('prosecution2', 'stand_to_sit')
+		}
 
-    // ...your existing setup below
-  }, [furnitureHdr, roomHdr, materials])
+		if (activeSpeaker === 'defense') {
+			const delay = 1000 + Math.random() * 1000;
+			timeouts.push(setTimeout(() => setRoleState('defense2', 'sit_to_stand'), delay));
+		} else {
+			setRoleState('defense2', 'stand_to_sit')
+		}
 
-  useLayoutEffect(() => {
-    // glTF models export UVs flipped on the Y axis, so we must flip the bakes to match
-    furnitureHdr.flipY = true
-    roomHdr.flipY = true
+		return () => {
+			timeouts.forEach(clearTimeout);
+		};
+	}, [activeSpeaker, setRoleState])
 
-    // --- Setup Furniture Material ---
-    // Set the base color to black so scene lights don't affect it
-    materials.Baked_Furniture.color = new THREE.Color(0x000000)
-    // Put the baked lighting into the emissive (glowing) map
-    materials.Baked_Furniture.emissiveMap = furnitureHdr
-    materials.Baked_Furniture.emissive = new THREE.Color(0xffffff)
-    materials.Baked_Furniture.emissiveIntensity = 1
-    materials.Baked_Furniture.needsUpdate = true
+	// 1. Load the HDR files
+	const furnitureHdr = useLoader(EXRLoader, '/textures/Furniture_Bake_Final.exr')
+	const roomHdr = useLoader(EXRLoader, '/textures/Room_Bake_Final.exr')
+	// const furnitureHdr = useLoader(RGBELoader, '/textures/Furniture_Bake_Final.hdr')
+	// const roomHdr = useLoader(RGBELoader, '/textures/Room_Bake_Final.hdr')
 
-    // --- Setup Room Material ---
-    materials.Baked_Room.color = new THREE.Color(0x000000)
-    materials.Baked_Room.emissiveMap = roomHdr
-    materials.Baked_Room.emissive = new THREE.Color(0xffffff)
-    materials.Baked_Room.emissiveIntensity = 1
-    materials.Baked_Room.needsUpdate = true
+	// 2. Apply the textures to your materials before they render
+	useLayoutEffect(() => {
+		const allMaterials = Object.values(materials)
 
-    // --- Setup Unbaked Custom Materials ---
+		allMaterials.forEach((mat) => {
+			mat.side = THREE.FrontSide // ✅ enable backface culling
+			mat.needsUpdate = true
+		})
 
-    // Gold: Highly metallic, low roughness
-    materials.Gold.color.set('#FFD700')
-    materials.Gold.metalness = 1.0
-    materials.Gold.roughness = 0.2
+		// ...your existing setup below
+	}, [furnitureHdr, roomHdr, materials])
 
-    // DarkerWood_Shiny: Same wood, but polished (lower roughness)
-    materials.DarkerWood_Shiny.color.set('#3E2723')
-    materials.DarkerWood_Shiny.metalness = 0.0
-    materials.DarkerWood_Shiny.roughness = 0.2
+	useLayoutEffect(() => {
+		// glTF models export UVs flipped on the Y axis, so we must flip the bakes to match
+		furnitureHdr.flipY = true
+		roomHdr.flipY = true
 
-    // LampShade: Cloth/paper look, maybe off-white and very rough
-    materials.LampShade.color.set('#FFF8DC')
-    materials.LampShade.emissive.set('#fabd7c')
-    materials.LampShade.emissiveIntensity = 10.0
-    materials.LampShade.metalness = 0.0
-    materials.LampShade.roughness = 0.95
+		// --- Setup Furniture Material ---
+		// Set the base color to black so scene lights don't affect it
+		materials.Baked_Furniture.color = new THREE.Color(0x000000)
+		// Put the baked lighting into the emissive (glowing) map
+		materials.Baked_Furniture.emissiveMap = furnitureHdr
+		materials.Baked_Furniture.emissive = new THREE.Color(0xffffff)
+		materials.Baked_Furniture.emissiveIntensity = 1
+		materials.Baked_Furniture.needsUpdate = true
 
-    // LightPassthrough: Window glass?
-    materials.Window.color.set('#E0F7FA')
-    materials.Window.metalness = 0.1
-    materials.Window.roughness = 0.1
-    // If it's glass, you might also want to make it transparent:
-    materials.Window.transparent = true
-    materials.Window.opacity = 0.6
+		// --- Setup Room Material ---
+		materials.Baked_Room.color = new THREE.Color(0x000000)
+		materials.Baked_Room.emissiveMap = roomHdr
+		materials.Baked_Room.emissive = new THREE.Color(0xffffff)
+		materials.Baked_Room.emissiveIntensity = 1
+		materials.Baked_Room.needsUpdate = true
 
-  }, [furnitureHdr, roomHdr, materials])
+		// --- Setup Unbaked Custom Materials ---
+
+		// Gold: Highly metallic, low roughness
+		materials.Gold.color.set('#FFD700')
+		materials.Gold.metalness = 1.0
+		materials.Gold.roughness = 0.2
+
+		// DarkerWood_Shiny: Same wood, but polished (lower roughness)
+		materials.DarkerWood_Shiny.color.set('#3E2723')
+		materials.DarkerWood_Shiny.metalness = 0.0
+		materials.DarkerWood_Shiny.roughness = 0.2
+
+		// LampShade: Cloth/paper look, maybe off-white and very rough
+		materials.LampShade.color.set('#FFF8DC')
+		materials.LampShade.emissive.set('#fabd7c')
+		materials.LampShade.emissiveIntensity = 10.0
+		materials.LampShade.metalness = 0.0
+		materials.LampShade.roughness = 0.95
+
+		// LightPassthrough: Window glass?
+		materials.Window.color.set('#ffc471ff')
+		materials.Window.emissive.set('#ffc471ff')
+		materials.Window.emissiveIntensity = 200.0
+		materials.Window.metalness = 0
+		materials.Window.roughness = 0.95
+		materials.Window.transparent = false
+		materials.Window.needsUpdate = true
+
+	}, [furnitureHdr, roomHdr, materials])
 
 
-  return (
-    <group {...props} dispose={null}>
-      <mesh geometry={nodes.LowChair.geometry} material={materials.Baked_Furniture} position={[0.521, 0.608, -0.957]} />
-      <mesh geometry={nodes.Judge_RaisedPlatform.geometry} material={materials.Baked_Furniture} position={[0.027, -0.565, -3]} />
-      <mesh geometry={nodes.Lectern.geometry} material={materials.Baked_Furniture} position={[0, 0, 1.918]} />
-      <mesh geometry={nodes.Room_Divider.geometry} material={materials.Baked_Furniture} position={[0, 0, 5.398]} />
-      <mesh geometry={nodes.Gallery_Seats.geometry} material={materials.Baked_Furniture} position={[-2.411, 0.504, 6.252]} />
-      <mesh geometry={nodes.Main_AboveThing.geometry} material={materials.Baked_Furniture} position={[0, 3.53, -4]} />
-      <mesh geometry={nodes.InGodWeTrust.geometry} material={materials.Baked_Furniture} position={[0, 3.19, -4]} rotation={[Math.PI / 2, 0, 0]} />
-      <mesh geometry={nodes.Pillar.geometry} material={materials.Baked_Furniture} position={[-1.672, 1.055, -3.932]} />
-      <mesh geometry={nodes.Window.geometry} material={materials.Window} position={[0.121, 0, -4]} />
-      <mesh geometry={nodes.Prisoner_Door.geometry} material={materials.Baked_Furniture} position={[5.326, 0.928, 1.516]}>
-        <mesh geometry={nodes.Prisoner_Door_Handle.geometry} material={materials.Baked_Furniture} position={[-0.061, 0.019, 0.401]} />
-      </mesh>
-      <mesh geometry={nodes.Main_Doors.geometry} material={materials.Baked_Furniture} position={[0.399, 0.928, 11.451]} rotation={[0, -Math.PI / 2, 0]} />
-      <mesh geometry={nodes.MainDoors_PushBars.geometry} material={materials.Baked_Furniture} position={[0.019, 0.947, 11.39]} rotation={[-Math.PI, -1.571, 0]} scale={-1} />
-      <Gavel ref={gavelRef} nodes={nodes} materials={materials} />
-      <mesh geometry={nodes.Judge_Desk.geometry} material={materials.Baked_Furniture} position={[0.0, 1, -2.477]} />
-      <mesh geometry={nodes.Clerks_Desk.geometry} material={materials.Baked_Furniture} position={[0.027, 0.275, -0.524]} />
-      <mesh geometry={nodes.Prosecution_Desk.geometry} material={materials.Baked_Furniture} position={[1.974, 0.086, 3.323]} rotation={[Math.PI, 0, Math.PI]} />
-      <mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 0.497]}>
-        <mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
-      </mesh>
-      <mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 2.555]}>
-        <mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
-      </mesh>
-      <mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 4.613]}>
-        <mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
-      </mesh>
-      <mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 6.671]}>
-        <mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
-      </mesh>
-      <mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[-1.096, 5.269, 0.497]}>
-        <mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
-      </mesh>
-      <mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[-1.096, 5.269, 2.555]}>
-        <mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
-      </mesh>
-      <mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[-1.096, 5.269, 4.613]}>
-        <mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
-      </mesh>
-      <mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[-1.096, 5.269, 6.671]}>
-        <mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
-      </mesh>
-      <mesh geometry={nodes.Defense_Desk.geometry} material={materials.Baked_Furniture} position={[-1.974, 0.086, 3.323]} rotation={[Math.PI, 0, Math.PI]} />
-      <mesh geometry={nodes.LowChair001.geometry} material={materials.Baked_Furniture} position={[-0.521, 0.608, -0.957]} />
-      <mesh geometry={nodes.Prosecution_Chair1.geometry} material={materials.Baked_Furniture} position={[2.302, 0.504, 3.984]} />
-      <mesh geometry={nodes.Pillar002.geometry} material={materials.Baked_Furniture} position={[-3.019, 1.055, -3.932]} />
-      <mesh geometry={nodes.Pillar003.geometry} material={materials.Baked_Furniture} position={[-4.723, 1.055, -2.972]} rotation={[0, Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar004.geometry} material={materials.Baked_Furniture} position={[-4.723, 1.055, -1.484]} rotation={[0, Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar005.geometry} material={materials.Baked_Furniture} position={[-4.723, 1.055, 7.796]} rotation={[0, Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar006.geometry} material={materials.Baked_Furniture} position={[-4.723, 1.055, 9.284]} rotation={[0, Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar008.geometry} material={materials.Baked_Furniture} position={[4.723, 1.055, 4.348]} rotation={[0, -Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar009.geometry} material={materials.Baked_Furniture} position={[-4.217, 1.055, 10.303]} rotation={[Math.PI, 0, Math.PI]} />
-      <mesh geometry={nodes.Pillar010.geometry} material={materials.Baked_Furniture} position={[-2.729, 1.055, 10.303]} rotation={[Math.PI, 0, Math.PI]} />
-      <mesh geometry={nodes.Pillar011.geometry} material={materials.Baked_Furniture} position={[-1.37, 1.055, 11.176]} rotation={[Math.PI, 0, Math.PI]} />
-      <mesh geometry={nodes.Pillar007.geometry} material={materials.Baked_Furniture} position={[5.13, 1.055, 2.886]} rotation={[0, -Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar012.geometry} material={materials.Baked_Furniture} position={[5.13, 1.055, 0.143]} rotation={[0, -Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar014.geometry} material={materials.Baked_Furniture} position={[4.723, 1.055, 5.838]} rotation={[0, -Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar015.geometry} material={materials.Baked_Furniture} position={[4.723, 1.055, 7.328]} rotation={[0, -Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Pillar016.geometry} material={materials.Baked_Furniture} position={[4.723, 1.055, 8.818]} rotation={[0, -Math.PI / 2, 0]} />
-      <mesh geometry={nodes.Main_Doors_AboveThing.geometry} material={materials.Baked_Furniture} position={[0, 2.749, 11.26]} rotation={[-Math.PI, 0, -Math.PI]} scale={0.85} />
-      <mesh geometry={nodes.Prisoner_Door_AboveThing.geometry} material={materials.Baked_Furniture} position={[5.259, 2.749, 1.515]} rotation={[0, -Math.PI / 2, 0]} scale={0.85} />
-      <mesh geometry={nodes.Pillar013.geometry} material={materials.Baked_Furniture} position={[1.672, 1.055, -3.932]} />
-      <mesh geometry={nodes.Gallery_Seats001.geometry} material={materials.Baked_Furniture} position={[-2.411, 0.504, 7.376]} />
-      <mesh geometry={nodes.Gallery_Seats002.geometry} material={materials.Baked_Furniture} position={[-2.411, 0.504, 8.5]} />
-      <mesh geometry={nodes.Gallery_Seats003.geometry} material={materials.Baked_Furniture} position={[2.411, 0.504, 6.252]} />
-      <mesh geometry={nodes.Gallery_Seats004.geometry} material={materials.Baked_Furniture} position={[2.411, 0.504, 7.376]} />
-      <mesh geometry={nodes.Gallery_Seats005.geometry} material={materials.Baked_Furniture} position={[2.411, 0.504, 8.5]} />
-      <mesh geometry={nodes.Prosecution_Chair2.geometry} material={materials.Baked_Furniture} position={[1.596, 0.504, 3.984]} />
-      <mesh geometry={nodes.Defense_Chair2.geometry} material={materials.Baked_Furniture} position={[-1.596, 0.504, 3.984]} />
-      <mesh geometry={nodes.Defense_Chair1.geometry} material={materials.Baked_Furniture} position={[-2.302, 0.504, 3.984]} />
-      <mesh geometry={nodes.Floor.geometry} material={materials.Baked_Room} position={[0, 0, 3.057]} />
-      <mesh geometry={nodes.Walls.geometry} material={materials.Baked_Room} position={[0, 0, -4]} />
-      <mesh geometry={nodes.Walls_Brim.geometry} material={materials.Baked_Room} />
-      <mesh geometry={nodes.Ceiling.geometry} material={materials.Baked_Room} position={[0, 4.592, 3.584]} />
-      <CourtroomCharacters />
-    </group>
-  )
+	return (
+		<group {...props} dispose={null}>
+			<mesh geometry={nodes.LowChair.geometry} material={materials.Baked_Furniture} position={[0.521, 0.608, -0.957]} />
+			<mesh geometry={nodes.Judge_RaisedPlatform.geometry} material={materials.Baked_Furniture} position={[0.027, -0.565, -3]} />
+			<mesh geometry={nodes.Lectern.geometry} material={materials.Baked_Furniture} position={[0, 0, 1.918]} />
+			<mesh geometry={nodes.Room_Divider.geometry} material={materials.Baked_Furniture} position={[0, 0, 5.398]} />
+			<mesh geometry={nodes.Gallery_Seats.geometry} material={materials.Baked_Furniture} position={[-2.411, 0.504, 6.252]} />
+			<mesh geometry={nodes.Main_AboveThing.geometry} material={materials.Baked_Furniture} position={[0, 3.53, -4]} />
+			<mesh geometry={nodes.InGodWeTrust.geometry} material={materials.Baked_Furniture} position={[0, 3.19, -4]} rotation={[Math.PI / 2, 0, 0]} />
+			<mesh geometry={nodes.Pillar.geometry} material={materials.Baked_Furniture} position={[-1.672, 1.055, -3.932]} />
+			<mesh geometry={nodes.Window.geometry} material={materials.Window} position={[0.121, 0, -4]} />
+			<mesh geometry={nodes.Prisoner_Door.geometry} material={materials.Baked_Furniture} position={[5.326, 0.928, 1.516]}>
+				<mesh geometry={nodes.Prisoner_Door_Handle.geometry} material={materials.Baked_Furniture} position={[-0.061, 0.019, 0.401]} />
+			</mesh>
+			<mesh geometry={nodes.Main_Doors.geometry} material={materials.Baked_Furniture} position={[0.399, 0.928, 11.451]} rotation={[0, -Math.PI / 2, 0]} />
+			<mesh geometry={nodes.MainDoors_PushBars.geometry} material={materials.Baked_Furniture} position={[0.019, 0.947, 11.39]} rotation={[-Math.PI, -1.571, 0]} scale={-1} />
+			<Gavel ref={gavelRef} nodes={nodes} materials={materials} />
+			<mesh geometry={nodes.Judge_Desk.geometry} material={materials.Baked_Furniture} position={[0.0, 1, -2.477]} />
+			<mesh geometry={nodes.Clerks_Desk.geometry} material={materials.Baked_Furniture} position={[0.027, 0.275, -0.524]} />
+			<mesh geometry={nodes.Prosecution_Desk.geometry} material={materials.Baked_Furniture} position={[1.974, 0.086, 3.323]} rotation={[Math.PI, 0, Math.PI]} />
+			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 0.497]}>
+				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
+			</mesh>
+			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 2.555]}>
+				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
+			</mesh>
+			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 4.613]}>
+				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
+			</mesh>
+			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[1.096, 5.269, 6.671]}>
+				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
+			</mesh>
+			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[-1.096, 5.269, 0.497]}>
+				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
+			</mesh>
+			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[-1.096, 5.269, 2.555]}>
+				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
+			</mesh>
+			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[-1.096, 5.269, 4.613]}>
+				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
+			</mesh>
+			<mesh geometry={nodes.Lamp_Frame.geometry} material={materials.LampPost} position={[-1.096, 5.269, 6.671]}>
+				<mesh geometry={nodes.Lamp_Shade.geometry} material={materials.LampShade} position={[0, -0.985, 0]} scale={0.29} />
+			</mesh>
+			<mesh geometry={nodes.Defense_Desk.geometry} material={materials.Baked_Furniture} position={[-1.974, 0.086, 3.323]} rotation={[Math.PI, 0, Math.PI]} />
+			<mesh geometry={nodes.LowChair001.geometry} material={materials.Baked_Furniture} position={[-0.521, 0.608, -0.957]} />
+			<mesh geometry={nodes.Prosecution_Chair1.geometry} material={materials.Baked_Furniture} position={[2.302, 0.504, 3.984]} />
+			<mesh geometry={nodes.Pillar002.geometry} material={materials.Baked_Furniture} position={[-3.019, 1.055, -3.932]} />
+			<mesh geometry={nodes.Pillar003.geometry} material={materials.Baked_Furniture} position={[-4.723, 1.055, -2.972]} rotation={[0, Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar004.geometry} material={materials.Baked_Furniture} position={[-4.723, 1.055, -1.484]} rotation={[0, Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar005.geometry} material={materials.Baked_Furniture} position={[-4.723, 1.055, 7.796]} rotation={[0, Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar006.geometry} material={materials.Baked_Furniture} position={[-4.723, 1.055, 9.284]} rotation={[0, Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar008.geometry} material={materials.Baked_Furniture} position={[4.723, 1.055, 4.348]} rotation={[0, -Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar009.geometry} material={materials.Baked_Furniture} position={[-4.217, 1.055, 10.303]} rotation={[Math.PI, 0, Math.PI]} />
+			<mesh geometry={nodes.Pillar010.geometry} material={materials.Baked_Furniture} position={[-2.729, 1.055, 10.303]} rotation={[Math.PI, 0, Math.PI]} />
+			<mesh geometry={nodes.Pillar011.geometry} material={materials.Baked_Furniture} position={[-1.37, 1.055, 11.176]} rotation={[Math.PI, 0, Math.PI]} />
+			<mesh geometry={nodes.Pillar007.geometry} material={materials.Baked_Furniture} position={[5.13, 1.055, 2.886]} rotation={[0, -Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar012.geometry} material={materials.Baked_Furniture} position={[5.13, 1.055, 0.143]} rotation={[0, -Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar014.geometry} material={materials.Baked_Furniture} position={[4.723, 1.055, 5.838]} rotation={[0, -Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar015.geometry} material={materials.Baked_Furniture} position={[4.723, 1.055, 7.328]} rotation={[0, -Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Pillar016.geometry} material={materials.Baked_Furniture} position={[4.723, 1.055, 8.818]} rotation={[0, -Math.PI / 2, 0]} />
+			<mesh geometry={nodes.Main_Doors_AboveThing.geometry} material={materials.Baked_Furniture} position={[0, 2.749, 11.26]} rotation={[-Math.PI, 0, -Math.PI]} scale={0.85} />
+			<mesh geometry={nodes.Prisoner_Door_AboveThing.geometry} material={materials.Baked_Furniture} position={[5.259, 2.749, 1.515]} rotation={[0, -Math.PI / 2, 0]} scale={0.85} />
+			<mesh geometry={nodes.Pillar013.geometry} material={materials.Baked_Furniture} position={[1.672, 1.055, -3.932]} />
+			<mesh geometry={nodes.Gallery_Seats001.geometry} material={materials.Baked_Furniture} position={[-2.411, 0.504, 7.376]} />
+			<mesh geometry={nodes.Gallery_Seats002.geometry} material={materials.Baked_Furniture} position={[-2.411, 0.504, 8.5]} />
+			<mesh geometry={nodes.Gallery_Seats003.geometry} material={materials.Baked_Furniture} position={[2.411, 0.504, 6.252]} />
+			<mesh geometry={nodes.Gallery_Seats004.geometry} material={materials.Baked_Furniture} position={[2.411, 0.504, 7.376]} />
+			<mesh geometry={nodes.Gallery_Seats005.geometry} material={materials.Baked_Furniture} position={[2.411, 0.504, 8.5]} />
+			<mesh geometry={nodes.Prosecution_Chair2.geometry} material={materials.Baked_Furniture} position={[1.596, 0.504, 3.984]} />
+			<mesh geometry={nodes.Defense_Chair2.geometry} material={materials.Baked_Furniture} position={[-1.596, 0.504, 3.984]} />
+			<mesh geometry={nodes.Defense_Chair1.geometry} material={materials.Baked_Furniture} position={[-2.302, 0.504, 3.984]} />
+			<mesh geometry={nodes.Floor.geometry} material={materials.Baked_Room} position={[0, 0, 3.057]} />
+			<mesh geometry={nodes.Walls.geometry} material={materials.Baked_Room} position={[0, 0, -4]} />
+			<mesh geometry={nodes.Walls_Brim.geometry} material={materials.Baked_Room} />
+			<mesh geometry={nodes.Ceiling.geometry} material={materials.Baked_Room} position={[0, 4.592, 3.584]} />
+			<CourtroomCharacters />
+		</group>
+	)
 }
 
 useGLTF.preload('/models/Final_Courtroom.glb')

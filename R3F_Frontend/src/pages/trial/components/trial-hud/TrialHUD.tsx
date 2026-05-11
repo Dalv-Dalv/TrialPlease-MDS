@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  FastForward,
 } from 'lucide-react'
 import { useFlow } from '../../../../store/flow-store/flowStore'
 import type { Side } from '../../../../store/flow-store/types'
@@ -14,6 +15,7 @@ import { useLawyers } from '../../../../store/lawyer-store/lawyerStore'
 import { useCaseGenerator } from '../../../../store/case-generator-store/caseGeneratorContext'
 import { HUD_STRINGS, phaseLabel } from '../../../../utils/strings'
 import { setGlobalSpeechRate } from '../../../../utils/speechSynthesis'
+import { TrialDebriefModal } from '../debrief-modal/TrialDebriefModal'
 import './TrialHUD.css'
 
 export function TrialHUD() {
@@ -80,8 +82,10 @@ export function TrialHUD() {
 
   // Card shows a fresh utterance when not thinking — drop the latest history
   // entry so it isn't rendered twice.
+  const lastHistoryItem = recentSpeech.length > 0 ? recentSpeech[recentSpeech.length - 1] : null
   const cardShowsSpeech = speakerState?.lastUtterance != null && !speakerState.isThinking
-  const historyEntries = cardShowsSpeech ? recentSpeech.slice(0, -1) : recentSpeech
+  const shouldDropLast = cardShowsSpeech && lastHistoryItem?.side === activeSpeaker && lastHistoryItem?.text === speakerState?.lastUtterance
+  const historyEntries = shouldDropLast ? recentSpeech.slice(0, -1) : recentSpeech
 
   // Enter triggers Continue when it's available and no AI turn is in flight.
   useEffect(() => {
@@ -141,19 +145,31 @@ export function TrialHUD() {
 
             {isHistoryOpen && (
               <div className="trial-hud-history-list">
-                {historyEntries.map((item) => (
-                  <div key={item.id} className={`trial-hud-history-item trial-hud-history-item--${item.side}`}>
-                    <span
-                      className={`trial-hud-history-tag trial-hud-history-tag--${item.side}`}
-                    >
-                      {HUD_STRINGS.speaker[item.side]}
-                    </span>
-                    <span
-                      className="trial-hud-history-text"
-                      dangerouslySetInnerHTML={{ __html: item.text }}
-                    />
-                  </div>
-                ))}
+                {historyEntries.map((item) => {
+                  if (item.side === 'system') {
+                    return (
+                      <div key={item.id} className="trial-hud-history-item trial-hud-history-item--system">
+                        <span 
+                          className="trial-hud-history-text"
+                          dangerouslySetInnerHTML={{ __html: item.text }}
+                        />
+                      </div>
+                    )
+                  }
+                  return (
+                    <div key={item.id} className={`trial-hud-history-item trial-hud-history-item--${item.side}`}>
+                      <span
+                        className={`trial-hud-history-tag trial-hud-history-tag--${item.side}`}
+                      >
+                        {HUD_STRINGS.speaker[item.side]}
+                      </span>
+                      <span 
+                        className="trial-hud-history-text"
+                        dangerouslySetInnerHTML={{ __html: item.text }}
+                      />
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -164,27 +180,27 @@ export function TrialHUD() {
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="trial-hud-card-header">
-            {speakerName ? (
-              <div className="trial-hud-speaker">
-                <span className={`trial-hud-speaker-tag trial-hud-speaker-tag--${speakerSide ?? 'judge'}`}>
-                  {speakerTagLabel}
-                </span>
-                <span className="trial-hud-speaker-name">{speakerName}</span>
-              </div>
-            ) : (
-              <span />
-            )}
-            <button
-              type="button"
-              className="trial-hud-toggle"
-              onClick={() => setIsCardOpen((open) => !open)}
-              aria-label={isCardOpen ? 'Collapse current speech' : 'Expand current speech'}
-              aria-expanded={isCardOpen}
-            >
-              {isCardOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-            </button>
-          </div>
+          {phase !== 'pre_trial' && (
+            <div className="trial-hud-card-header">
+              {speakerName && (
+                <div className="trial-hud-speaker">
+                  <span className={`trial-hud-speaker-tag trial-hud-speaker-tag--${speakerSide ?? 'judge'}`}>
+                    {speakerTagLabel}
+                  </span>
+                  <span className="trial-hud-speaker-name">{speakerName}</span>
+                </div>
+              )}
+              <button
+                type="button"
+                className="trial-hud-toggle"
+                onClick={() => setIsCardOpen((open) => !open)}
+                aria-label={isCardOpen ? 'Collapse current speech' : 'Expand current speech'}
+                aria-expanded={isCardOpen}
+              >
+                {isCardOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </button>
+            </div>
+          )}
 
           {isCardOpen && (
             <p
@@ -256,6 +272,16 @@ export function TrialHUD() {
                 <ChevronRight size={16} />
                 {isThinking ? HUD_STRINGS.advance.waiting : HUD_STRINGS.advance.button}
               </button>
+              {phase === 'evidence_debate' && (
+                <button
+                  type="button"
+                  className="trial-hud-btn"
+                  onClick={() => useFlow.getState().skipCurrentEvidence()}
+                >
+                  <FastForward size={16} />
+                  Skip Evidence
+                </button>
+              )}
             </div>
           )}
 
@@ -279,6 +305,8 @@ export function TrialHUD() {
       {transcript.length > 0 && (
         <div className="trial-hud-transcript-hint">{HUD_STRINGS.transcript.hint(transcript.length)}</div>
       )}
+
+      {phase === 'concluded' && <TrialDebriefModal />}
     </div>
   )
 }
