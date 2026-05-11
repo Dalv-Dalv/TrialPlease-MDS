@@ -109,6 +109,8 @@ async function fetchLawyerAction(
         lawyer_type: side === 'prosecution' ? 'prosecutor' : 'defense',
         confidence_level: confidence,
         transcript,
+        phase,
+        evidence_name: currentEvidenceName,
       }),
     })
     if (!res.ok) throw new Error(`lawyer_action ${res.status}`)
@@ -211,7 +213,12 @@ function computeNextState(flow: FlowState, totalEvidenceItems: number): Partial<
     } else if (next === 'concluded') patch.activeSpeaker = null
 
   } else if (flow.phase === 'evidence_debate') {
-    if (lastAction.kind === 'evidence_argument' || lastAction.kind === 'pass_evidence') {
+    if (lastAction.kind === 'objection_ruling') {
+      const objection = flow.transcript.find((a) => a.id === lastAction.objectionId)
+      if (objection && objection.kind === 'objection') {
+        patch.activeSpeaker = opposite(objection.side)
+      }
+    } else if (lastAction.kind === 'evidence_argument' || lastAction.kind === 'pass_evidence') {
       if (flow.evidencePassed.defense && flow.evidencePassed.prosecution) {
         const idx = flow.currentEvidenceIndex ?? 0
         if (idx + 1 < totalEvidenceItems) {
@@ -301,7 +308,8 @@ export const useFlow = create<FlowState>((set, get) => ({
         pf &&
         pf.phase === currentFlow.phase &&
         pf.speaker === speaker &&
-        pf.evidenceIndex === currentFlow.currentEvidenceIndex
+        pf.evidenceIndex === currentFlow.currentEvidenceIndex &&
+        pf.transcriptLength === currentFlow.transcript.length
       ) {
         console.debug('[flow] using prefetched lawyer_action response')
         response = await pf.promise
@@ -529,6 +537,7 @@ export const useFlow = create<FlowState>((set, get) => ({
         speaker: nextSpeaker,
         evidenceIndex: nextEvidenceIndex,
         promise,
+        transcriptLength: flow.transcript.length,
       },
     })
   },

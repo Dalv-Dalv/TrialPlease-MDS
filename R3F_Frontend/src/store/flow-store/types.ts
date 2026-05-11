@@ -66,6 +66,7 @@ export type PrefetchState = {
   speaker: Side
   evidenceIndex: number | null
   promise: Promise<LawyerActionResponse>
+  transcriptLength: number
 }
 
 export type FlowState = {
