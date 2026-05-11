@@ -30,9 +30,9 @@ export const ANIMATION_OFFSETS: Record<ActionName, { position: [number, number, 
   SitIdle2: { position: [0, -0.4, 0], rotation: [0, 0, 0] },
   SitIdle3: { position: [0, -0.4, 0], rotation: [0, 0, 0] },
   SitIdle4: { position: [0, -0.4, 0], rotation: [0, 0, 0] },
-  SitToStand1: { position: [0, -0.4, 0], rotation: [0, 0, 0] },
-  SitToStand2: { position: [0, -0.4, 0], rotation: [0, 0, 0] },
-  StandToSit: { position: [0, -0.4, 0], rotation: [0, 0, 0] },
+  SitToStand1: { position: [0, -0.4, 0.0], rotation: [0, 0, 0] },
+  SitToStand2: { position: [0, -0.4, 0.0], rotation: [0, 0, 0] },
+  StandToSit: { position: [0, -0.4, 0.41], rotation: [0, 0, 0] },
 };
 
 export function CharacterInstance({
@@ -50,30 +50,41 @@ export function CharacterInstance({
   const { animations } = useGLTF('/models/AnimationsExport.glb') as any;
   const rootBone = ROOT_BONES[model];
   const modifiedAnimations = useMemo(() => {
-    return animations.map((clip: THREE.AnimationClip) => {
-      const newClip = clip.clone();
+    const splitClips: THREE.AnimationClip[] = [];
+    animations.forEach((clip: THREE.AnimationClip) => {
+      const rotClip = clip.clone();
+      const posClip = clip.clone();
+
+      rotClip.name = clip.name;
+      posClip.name = clip.name + '_Pos';
 
       const prefixSuffixMatch = rootBone.match(/^(.*?)(Hips)(.*)$/);
       const prefix = prefixSuffixMatch ? prefixSuffixMatch[1] : 'mixamorig';
       const suffix = prefixSuffixMatch ? prefixSuffixMatch[3] : '';
 
-      newClip.tracks = newClip.tracks.filter(track => {
-        // Remove position tracks for non-hip bones to preserve character proportions
-        if (track.name.endsWith('.position') && !track.name.includes('Hips') && !track.name.includes('AnimationsArmature')) {
-          return false;
-        }
+      // Rotation clip: keep all tracks except position
+      rotClip.tracks = rotClip.tracks.filter(track => !track.name.endsWith('.position'));
+
+      // Position clip: keep only position tracks for the main hips/armature
+      posClip.tracks = posClip.tracks.filter(track => {
+        if (!track.name.endsWith('.position')) return false;
+        if (!track.name.includes('Hips') && !track.name.includes('AnimationsArmature')) return false;
         return true;
       });
 
-      newClip.tracks.forEach(track => {
-        const parts = track.name.split('.');
-        if (parts.length === 2 && parts[0].startsWith('mixamorig8')) {
-          const bodyPart = parts[0].substring('mixamorig8'.length);
-          track.name = `${prefix}${bodyPart}${suffix}.${parts[1]}`;
-        }
+      [rotClip, posClip].forEach(c => {
+        c.tracks.forEach(track => {
+          const parts = track.name.split('.');
+          if (parts.length === 2 && parts[0].startsWith('mixamorig8')) {
+            const bodyPart = parts[0].substring('mixamorig8'.length);
+            track.name = `${prefix}${bodyPart}${suffix}.${parts[1]}`;
+          }
+        });
       });
-      return newClip;
+
+      splitClips.push(rotClip, posClip);
     });
+    return splitClips;
   }, [animations, rootBone]);
 
   const groupRef = useRef<THREE.Group>(null);
@@ -87,8 +98,16 @@ export function CharacterInstance({
     return IDLE_ANIMATIONS[Math.floor(Math.random() * IDLE_ANIMATIONS.length)] as ActionName;
   }, []);
 
+  const sitToStandAnimRef = useRef<ActionName>('SitToStand1');
+  const prevRoleStateRef = useRef(roleState);
+
   useEffect(() => {
     if (!actions || !mixer) return;
+
+    if (roleState === 'sit_to_stand' && prevRoleStateRef.current !== 'sit_to_stand') {
+      sitToStandAnimRef.current = (Math.random() > 0.5 ? 'SitToStand1' : 'SitToStand2') as ActionName;
+    }
+    prevRoleStateRef.current = roleState;
 
     let targetAnim: ActionName;
     let loop = THREE.LoopRepeat;
@@ -96,29 +115,47 @@ export function CharacterInstance({
 
     switch (roleState) {
       case 'sit': targetAnim = idleAnimName; break;
-      case 'sit_to_stand': targetAnim = 'SitToStand1'; loop = THREE.LoopOnce; clamp = true; break;
+      case 'sit_to_stand': targetAnim = sitToStandAnimRef.current; loop = THREE.LoopOnce; clamp = true; break;
       case 'stand_to_sit': targetAnim = 'StandToSit'; loop = THREE.LoopOnce; clamp = true; break;
-      case 'stand': targetAnim = 'SitToStand1'; loop = THREE.LoopOnce; clamp = true; break;
+      case 'stand': targetAnim = sitToStandAnimRef.current; loop = THREE.LoopOnce; clamp = true; break;
       default: targetAnim = idleAnimName;
     }
 
-    const action = actions[targetAnim];
-    if (!action) return;
+    const actionRot = actions[targetAnim];
+    const actionPos = actions[targetAnim + '_Pos'];
+    if (!actionRot || !actionPos) return;
 
     setCurrentAnimName(targetAnim);
-    action.reset();
-    action.setLoop(loop, Infinity);
-    action.clampWhenFinished = clamp;
 
-    if (roleState === 'sit') {
-      action.time = Math.random() * action.getClip().duration;
-    } else if (roleState === 'stand') {
-      action.time = action.getClip().duration;
+    // Stop previous Position action instantly
+    if (actions[currentAnimName + '_Pos'] && currentAnimName !== targetAnim) {
+      actions[currentAnimName + '_Pos'].stop();
     }
 
-    action.play();
-    if (roleState !== 'stand') {
-      action.crossFadeFrom(actions[currentAnimName] || action, 0.5, true);
+    actionRot.reset();
+    actionRot.setLoop(loop, Infinity);
+    actionRot.clampWhenFinished = clamp;
+
+    actionPos.reset();
+    actionPos.setLoop(loop, Infinity);
+    actionPos.clampWhenFinished = clamp;
+
+    if (roleState === 'sit') {
+      const time = Math.random() * actionRot.getClip().duration;
+      actionRot.time = time;
+      actionPos.time = time;
+    } else if (roleState === 'stand') {
+      const time = actionRot.getClip().duration;
+      actionRot.time = time;
+      actionPos.time = time;
+    }
+
+    actionPos.play();
+    actionRot.play();
+
+    // Crossfade Rotation action only
+    if (roleState !== 'stand' && actions[currentAnimName] && currentAnimName !== targetAnim) {
+      actionRot.crossFadeFrom(actions[currentAnimName], 0.5, true);
     }
   }, [actions, mixer, roleState, idleAnimName]);
 
@@ -126,6 +163,7 @@ export function CharacterInstance({
     if (!mixer) return;
     const onFinished = (e: any) => {
       const actionName = e.action.getClip().name;
+      if (actionName.endsWith('_Pos')) return; // Ignore positional clips
       if (actionName === 'StandToSit') {
         setRoleState(role, 'sit');
       } else if (actionName === 'SitToStand1' || actionName === 'SitToStand2') {
