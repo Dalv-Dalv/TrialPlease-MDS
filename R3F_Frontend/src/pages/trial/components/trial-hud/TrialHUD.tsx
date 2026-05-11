@@ -14,6 +14,7 @@ import type { Side } from '../../../../store/flow-store/types'
 import { useLawyers } from '../../../../store/lawyer-store/lawyerStore'
 import { useCaseGenerator } from '../../../../store/case-generator-store/caseGeneratorContext'
 import { HUD_STRINGS, phaseLabel } from '../../../../utils/strings'
+import { TrialDebriefModal } from '../debrief-modal/TrialDebriefModal'
 import './TrialHUD.css'
 
 export function TrialHUD() {
@@ -272,6 +273,8 @@ export function TrialHUD() {
       {transcript.length > 0 && (
         <div className="trial-hud-transcript-hint">{HUD_STRINGS.transcript.hint(transcript.length)}</div>
       )}
+
+      {phase === 'concluded' && <TrialDebriefModal />}
     </div>
   )
 }

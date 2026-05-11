@@ -131,12 +131,15 @@ async function fetchDebrief(caseId: number, verdict: string): Promise<DebriefRes
       body: JSON.stringify({ verdict }),
     })
     if (!res.ok) throw new Error(`debrief ${res.status}`)
-    return (await res.json()) as DebriefResult
+    const raw = await res.json()
+    return { ...raw, user_verdict: verdict } as DebriefResult
   } catch (err) {
     console.warn('[flow] debrief API failed, falling back to stub:', err)
     const correct = verdict === currentCase?.correct_verdict
     return {
-      correct,
+      verdict_correct: correct,
+      correct_verdict: currentCase?.correct_verdict ?? 'Unknown',
+      user_verdict: verdict,
       absolute_truth:
         currentCase != null
           ? `(stub) the absolute truth would be returned by the backend; ${correct ? 'your verdict matches' : 'your verdict does not match'} the recorded correct verdict (${currentCase.correct_verdict}).`
