@@ -49,6 +49,8 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         lawyer_type = request.data.get('lawyer_type', 'prosecutor')
         confidence = request.data.get('confidence_level', 'normal')
+        phase = request.data.get('phase', 'unknown')
+        evidence_name = request.data.get('evidence_name', None)
         transcript = request.data.get('transcript', [])
         phase = request.data.get('phase', 'unknown')
         evidence_name = request.data.get('evidence_name', None)

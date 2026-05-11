@@ -49,15 +49,16 @@ export type LawyerActionResponse =
 
 /** Response shape from `POST /api/cases/<id>/debrief/`. */
 export type DebriefResult = {
-  correct: boolean
+  verdict_correct: boolean
+  correct_verdict: string
   absolute_truth: string
-  score?: number
+  user_verdict: string
 }
 
 /** Compact entry kept in flow.recentSpeech for the HUD to render history. */
 export type SpeechEntry = {
   id: string
-  side: Side
+  side: Side | 'system'
   text: string
 }
 
@@ -112,4 +113,5 @@ export type FlowState = {
   appendAction: (a: TrialAction) => void
   passEvidence: (side: Side, evidenceName: string) => void
   prefetchNextTurn: () => void
+  skipCurrentEvidence: () => void
 }
