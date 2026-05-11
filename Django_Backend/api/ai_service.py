@@ -54,11 +54,17 @@ The JSON structure MUST be exactly the following:
   return getAgentJsonAnswer(prompt)
 
 
-def getAgentAcuserReply(case_json, spoken_statements, confidence_level="normal"):
- 
+def getAgentAcuserReply(case_json, spoken_statements, confidence_level="normal", phase="unknown", evidence_name=None):
+  
+  context_str = f"CURRENT TRIAL PHASE: {phase}"
+  if phase == 'evidence_debate' and evidence_name:
+      context_str += f"\\nFOCUS: The court is specifically debating the evidence: '{evidence_name}'. You MUST focus your argument strictly on this evidence item based on the details provided in the case."
+
   prompt = f'''
 You are a relentless, logical, and justice-oriented prosecutor / prosecution lawyer. Your role is to demonstrate the defendant's guilt using available evidence, testimony, and irrefutable logic, demanding their punishment for the crimes committed against the victim.
 Your current confidence level is: {confidence_level}. If high, be aggressive and press hard. If low, be hesitant or flustered.
+
+{context_str}
 
 Do not try to call witnesses to the stand. You may however refer to them and their statements.
 
@@ -82,11 +88,17 @@ Here are the spoken statements from the case already:
     
   return getAgentJsonAnswer(prompt)
 
-def getAgentDefendentReply(case_json, spoken_statements, confidence_level="normal"):
- 
+def getAgentDefendentReply(case_json, spoken_statements, confidence_level="normal", phase="unknown", evidence_name=None):
+  
+  context_str = f"CURRENT TRIAL PHASE: {phase}"
+  if phase == 'evidence_debate' and evidence_name:
+      context_str += f"\\nFOCUS: The court is specifically debating the evidence: '{evidence_name}'. You MUST focus your argument strictly on this evidence item based on the details provided in the case."
+
   prompt = f'''
 You are a top-tier defense attorney, extremely analytical, eloquent, and persuasive. Your role is to defend the accused in a given case, find loopholes in the prosecution's evidence, question the credibility of witnesses, and construct a narrative of innocence or mitigating circumstances.
 Your current confidence level is: {confidence_level}. If high, be aggressive and press hard. If low, be hesitant or flustered.
+
+{context_str}
 
 Do not try to call witnesses to the stand. You may however refer to them and their statements.
 

@@ -57,7 +57,7 @@ export type DebriefResult = {
 /** Compact entry kept in flow.recentSpeech for the HUD to render history. */
 export type SpeechEntry = {
   id: string
-  side: Side
+  side: Side | 'system'
   text: string
 }
 
@@ -111,4 +111,5 @@ export type FlowState = {
   appendAction: (a: TrialAction) => void
   passEvidence: (side: Side, evidenceName: string) => void
   prefetchNextTurn: () => void
+  skipCurrentEvidence: () => void
 }

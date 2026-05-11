@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  FastForward,
 } from 'lucide-react'
 import { useFlow } from '../../../../store/flow-store/flowStore'
 import type { Side } from '../../../../store/flow-store/types'
@@ -78,8 +79,10 @@ export function TrialHUD() {
 
   // Card shows a fresh utterance when not thinking — drop the latest history
   // entry so it isn't rendered twice.
+  const lastHistoryItem = recentSpeech.length > 0 ? recentSpeech[recentSpeech.length - 1] : null
   const cardShowsSpeech = speakerState?.lastUtterance != null && !speakerState.isThinking
-  const historyEntries = cardShowsSpeech ? recentSpeech.slice(0, -1) : recentSpeech
+  const shouldDropLast = cardShowsSpeech && lastHistoryItem?.side === activeSpeaker && lastHistoryItem?.text === speakerState?.lastUtterance
+  const historyEntries = shouldDropLast ? recentSpeech.slice(0, -1) : recentSpeech
 
   // Enter triggers Continue when it's available and no AI turn is in flight.
   useEffect(() => {
@@ -133,16 +136,25 @@ export function TrialHUD() {
 
             {isHistoryOpen && (
               <div className="trial-hud-history-list">
-                {historyEntries.map((item) => (
-                  <div key={item.id} className={`trial-hud-history-item trial-hud-history-item--${item.side}`}>
-                    <span
-                      className={`trial-hud-history-tag trial-hud-history-tag--${item.side}`}
-                    >
-                      {HUD_STRINGS.speaker[item.side]}
-                    </span>
-                    <span className="trial-hud-history-text">{item.text}</span>
-                  </div>
-                ))}
+                {historyEntries.map((item) => {
+                  if (item.side === 'system') {
+                    return (
+                      <div key={item.id} className="trial-hud-history-item trial-hud-history-item--system">
+                        <span className="trial-hud-history-text">{item.text}</span>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div key={item.id} className={`trial-hud-history-item trial-hud-history-item--${item.side}`}>
+                      <span
+                        className={`trial-hud-history-tag trial-hud-history-tag--${item.side}`}
+                      >
+                        {HUD_STRINGS.speaker[item.side]}
+                      </span>
+                      <span className="trial-hud-history-text">{item.text}</span>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
@@ -242,6 +254,16 @@ export function TrialHUD() {
                 <ChevronRight size={16} />
                 {isThinking ? HUD_STRINGS.advance.waiting : HUD_STRINGS.advance.button}
               </button>
+              {phase === 'evidence_debate' && (
+                <button
+                  type="button"
+                  className="trial-hud-btn"
+                  onClick={() => useFlow.getState().skipCurrentEvidence()}
+                >
+                  <FastForward size={16} />
+                  Skip Evidence
+                </button>
+              )}
             </div>
           )}
         </div>

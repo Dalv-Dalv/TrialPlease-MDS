@@ -26,7 +26,7 @@ const initialState = {
   caseId: null as number | null,
   confidence: { defense: 0.5, prosecution: 0.5 },
   debrief: null as DebriefResult | null,
-  recentSpeech: [] as { id: string; side: Side; text: string }[],
+  recentSpeech: [] as { id: string; side: Side | 'system'; text: string }[],
   prefetch: null,
 }
 
@@ -59,6 +59,7 @@ let currentCase: CaseData | null = null
 // Re-entrancy guard for advanceTurn(): repeated calls (e.g. spamming the
 // Continue button or holding Enter) collapse into a single in-flight turn.
 let advanceInProgress = false
+let currentTurnId = 0
 
 // === API fetchers ============================================================
 // Hits the Django backend documented in BACKEND_CHANGES.md. URLs are relative
@@ -108,6 +109,8 @@ async function fetchLawyerAction(
       body: JSON.stringify({
         lawyer_type: side === 'prosecution' ? 'prosecutor' : 'defense',
         confidence_level: confidence,
+        phase,
+        evidence_name: currentEvidenceName,
         transcript,
       }),
     })
@@ -158,7 +161,7 @@ function commitSpeech(side: Side, text: string) {
   useLawyers.getState().setThinking(side, false)
   useLawyers.getState().setUtterance(side, text)
   useFlow.setState((s) => ({
-    recentSpeech: [...s.recentSpeech, { id, side, text }].slice(-RECENT_SPEECH_MAX),
+    recentSpeech: [...s.recentSpeech, { id, side, text }],
   }))
 }
 
@@ -178,6 +181,40 @@ function lastSpokenBy(transcript: TrialAction[], side: Side): SpokenAction | nul
     if (isSpoken(a) && a.side === side) return a
   }
   return null
+}
+
+/** Filters the transcript to only include actions from the current evidence debate. */
+function filterTranscriptForEvidence(transcript: TrialAction[], phase: Phase, evidenceName: string | null): TrialAction[] {
+  if (phase !== 'evidence_debate' || !evidenceName) return transcript
+
+  // Find the last pass_evidence that does NOT match the current evidence
+  let lastOtherPassIndex = -1
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    const a = transcript[i]
+    if (a.kind === 'pass_evidence' && a.evidenceName !== evidenceName) {
+      lastOtherPassIndex = i
+      break
+    }
+  }
+
+  if (lastOtherPassIndex !== -1) {
+    return transcript.slice(lastOtherPassIndex + 1)
+  }
+
+  // If no previous evidence, find the end of opening statements
+  let lastOpeningIndex = -1
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    if (transcript[i].kind === 'opening_statement') {
+      lastOpeningIndex = i
+      break
+    }
+  }
+
+  if (lastOpeningIndex !== -1) {
+    return transcript.slice(lastOpeningIndex + 1)
+  }
+
+  return transcript
 }
 
 function computeNextState(flow: FlowState, totalEvidenceItems: number): Partial<FlowState> {
@@ -248,6 +285,7 @@ export const useFlow = create<FlowState>((set, get) => ({
       caseId: caseInfo.id,
       phase: 'opening_prosecution',
       activeSpeaker: 'prosecution',
+      recentSpeech: [{ id: newId(), side: 'system', text: 'PROSECUTION OPENING STATEMENT' }],
     })
     setTimeout(() => get().advanceTurn(), 0)
   },
@@ -273,6 +311,26 @@ export const useFlow = create<FlowState>((set, get) => ({
       const patch = computeNextState(flow, currentCase?.evidence_items.length ?? 0)
       if (Object.keys(patch).length > 0) {
         set(patch)
+
+        const newPhase = patch.phase ?? flow.phase
+        const newEvidenceIndex = patch.currentEvidenceIndex !== undefined ? patch.currentEvidenceIndex : flow.currentEvidenceIndex
+        
+        if (newPhase !== flow.phase || newEvidenceIndex !== flow.currentEvidenceIndex) {
+          let msg = ''
+          if (newPhase === 'opening_defense') msg = "DEFENSE OPENING STATEMENT"
+          else if (newPhase === 'evidence_debate') {
+            const eName = currentCase?.evidence_items[newEvidenceIndex ?? 0]?.name
+            msg = `EVIDENCE: ${eName}`
+          } else if (newPhase === 'closing_prosecution') msg = "PROSECUTION CLOSING STATEMENT"
+          else if (newPhase === 'closing_defense') msg = "DEFENSE CLOSING STATEMENT"
+          
+          if (msg) {
+            set((s) => ({
+              // @ts-ignore Side | 'system' is fine here
+              recentSpeech: [...s.recentSpeech, { id: newId(), side: 'system', text: msg }]
+            }))
+          }
+        }
       }
     }
 
@@ -287,6 +345,8 @@ export const useFlow = create<FlowState>((set, get) => ({
     if (speaker !== 'defense' && speaker !== 'prosecution') return
 
     advanceInProgress = true
+    const turnId = ++currentTurnId
+
     // Show "..." immediately so the user gets feedback while the API is in flight.
     beginThinking(speaker)
     try {
@@ -307,15 +367,23 @@ export const useFlow = create<FlowState>((set, get) => ({
         response = await pf.promise
         set({ prefetch: null })
       } else {
+        const transcriptToSend = filterTranscriptForEvidence(currentFlow.transcript, currentFlow.phase, evidenceName)
+
         response = await fetchLawyerAction(
           currentFlow.caseId ?? 0,
           speaker,
           currentFlow.confidence[speaker],
           currentFlow.phase,
           evidenceName,
-          currentFlow.transcript,
+          transcriptToSend,
         )
       }
+      
+      if (currentTurnId !== turnId) {
+        console.debug('[flow] discarding lawyer_action response due to turn cancellation')
+        return
+      }
+
       console.debug('[flow] lawyer_action response', { phase: currentFlow.phase, speaker, response })
 
       if (response.action === 'objection') {
@@ -366,8 +434,10 @@ export const useFlow = create<FlowState>((set, get) => ({
         }
       }
     } finally {
-      advanceInProgress = false
-      setTimeout(() => get().prefetchNextTurn(), 0)
+      if (currentTurnId === turnId) {
+        advanceInProgress = false
+        setTimeout(() => get().prefetchNextTurn(), 0)
+      }
     }
   },
 
@@ -514,13 +584,15 @@ export const useFlow = create<FlowState>((set, get) => ({
         ? (currentCase?.evidence_items[nextEvidenceIndex]?.name ?? null)
         : null
 
+    const transcriptToSend = filterTranscriptForEvidence(flow.transcript, nextPhase, evidenceName)
+
     const promise = fetchLawyerAction(
       flow.caseId ?? 0,
       nextSpeaker,
       flow.confidence[nextSpeaker],
       nextPhase,
       evidenceName,
-      flow.transcript // transcript already has the latest action appended
+      transcriptToSend // transcript already has the latest action appended
     )
 
     set({
@@ -531,6 +603,35 @@ export const useFlow = create<FlowState>((set, get) => ({
         promise,
       },
     })
+  },
+
+  skipCurrentEvidence: () => {
+    const s = get()
+    if (s.phase !== 'evidence_debate' || s.currentEvidenceIndex == null || s.awaitingUser) return
+    const evidenceName = currentCase?.evidence_items[s.currentEvidenceIndex]?.name ?? null
+    if (!evidenceName) return
+
+    // Cancel any in-flight turn
+    currentTurnId++
+    advanceInProgress = false
+
+    // Clear thinking state in case a side was actively fetching
+    endThinking('prosecution')
+    endThinking('defense')
+
+    // Clear prefetch cache and append pass actions
+    const ts = Date.now()
+    const action1: TrialAction = { id: newId(), ts, kind: 'pass_evidence', side: 'prosecution', evidenceName }
+    const action2: TrialAction = { id: newId(), ts: ts + 1, kind: 'pass_evidence', side: 'defense', evidenceName }
+
+    set((state) => ({
+      prefetch: null,
+      transcript: [...state.transcript, action1, action2],
+      evidencePassed: { prosecution: true, defense: true },
+    }))
+
+    // Trigger the next turn immediately
+    setTimeout(() => get().advanceTurn(), 0)
   },
 }))
 

@@ -48,13 +48,15 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         lawyer_type = request.data.get('lawyer_type', 'prosecutor')
         confidence = request.data.get('confidence_level', 'normal')
+        phase = request.data.get('phase', 'unknown')
+        evidence_name = request.data.get('evidence_name', None)
         transcript = request.data.get('transcript', [])
         
         try:
             if lawyer_type == 'prosecutor':
-                reply = getAgentAcuserReply(case_data, transcript, confidence)
+                reply = getAgentAcuserReply(case_data, transcript, confidence, phase, evidence_name)
             else:
-                reply = getAgentDefendentReply(case_data, transcript, confidence)
+                reply = getAgentDefendentReply(case_data, transcript, confidence, phase, evidence_name)
             return Response(reply, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
