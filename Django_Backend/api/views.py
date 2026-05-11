@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from .models import Case
 from .serializers import CaseSerializer
-from .ai_service import genereaza_caz_cu_ai, getAgentAcuserReply, getAgentDefendentReply, getWitnessReply
+from .ai_service import generateCase, getAgentAcuserReply, getAgentDefendentReply, getWitnessReply
 
 class CaseViewSet(viewsets.ModelViewSet):
     queryset = Case.objects.all().order_by('-created_at')
@@ -18,7 +18,7 @@ class CaseViewSet(viewsets.ModelViewSet):
             print("⏳ Apelăm AI-ul pentru a genera un caz nou...")
             
             # 1. Preluăm cazul generat de AI (ca dicționar)
-            ai_data = genereaza_caz_cu_ai()
+            ai_data = generateCase()
         
             # 2. Îl trecem prin Serializator ca să validăm și să salvăm în DB
             serializer = self.get_serializer(data=ai_data)
