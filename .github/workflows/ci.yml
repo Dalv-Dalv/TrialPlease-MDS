@@ -15,6 +15,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Check for AI changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ai:
+              - 'Django_Backend/api/ai_service.py'
+              - 'Django_Backend/test_ai_lawyers.py'
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -32,6 +41,13 @@ jobs:
         run: |
           cd Django_Backend
           python manage.py test
+
+      - name: Run AI Tests
+        if: steps.filter.outputs.ai == 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python Django_Backend/test_ai_lawyers.py
 
   frontend:
     name: Frontend CI
