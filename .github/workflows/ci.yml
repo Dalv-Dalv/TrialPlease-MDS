@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [ "StefanBusoi", "main", "master", "develop" ]
+  pull_request:
+    branches: [ "StefanBusoi", "main", "master", "develop" ]
+
+jobs:
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for AI changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ai:
+              - 'Django_Backend/api/ai_service.py'
+              - 'Django_Backend/test_ai_lawyers.py'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f Django_Backend/requirements.txt ]; then pip install -r Django_Backend/requirements.txt; fi
+
+      - name: Run Django Tests
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          cd Django_Backend
+          python manage.py test
+
+      - name: Run AI Tests
+        if: steps.filter.outputs.ai == 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python Django_Backend/test_ai_lawyers.py
+
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: R3F_Frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd R3F_Frontend
+          npm install
+
+      - name: Run Lint
+        run: |
+          cd R3F_Frontend
+          npm run lint

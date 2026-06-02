@@ -20,3 +20,4 @@ __pycache__/
 # Node modules (just in case)
 node_modules/
 .pnp.*
+Django_Backend/db.sqlite3

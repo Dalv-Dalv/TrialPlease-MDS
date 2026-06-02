@@ -1,10 +1,11 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+# pyrefly: ignore [missing-import]
 from rest_framework.permissions import AllowAny
 from .models import Case
 from .serializers import CaseSerializer
-from .ai_service import genereaza_caz_cu_ai, getAgentAcuserReply, getAgentDefendentReply, getWitnessReply
+from .ai_service import generateCase, getAgentAcuserReply, getAgentDefendentReply, getWitnessReply
 
 class CaseViewSet(viewsets.ModelViewSet):
     queryset = Case.objects.all().order_by('-created_at')
@@ -18,7 +19,7 @@ class CaseViewSet(viewsets.ModelViewSet):
             print("⏳ Apelăm AI-ul pentru a genera un caz nou...")
             
             # 1. Preluăm cazul generat de AI (ca dicționar)
-            ai_data = genereaza_caz_cu_ai()
+            ai_data = generateCase()
         
             # 2. Îl trecem prin Serializator ca să validăm și să salvăm în DB
             serializer = self.get_serializer(data=ai_data)
@@ -48,13 +49,17 @@ class CaseViewSet(viewsets.ModelViewSet):
         
         lawyer_type = request.data.get('lawyer_type', 'prosecutor')
         confidence = request.data.get('confidence_level', 'normal')
+        phase = request.data.get('phase', 'unknown')
+        evidence_name = request.data.get('evidence_name', None)
         transcript = request.data.get('transcript', [])
+        phase = request.data.get('phase', 'unknown')
+        evidence_name = request.data.get('evidence_name', None)
         
         try:
             if lawyer_type == 'prosecutor':
-                reply = getAgentAcuserReply(case_data, transcript, confidence)
+                reply = getAgentAcuserReply(case_data, transcript, confidence, phase, evidence_name)
             else:
-                reply = getAgentDefendentReply(case_data, transcript, confidence)
+                reply = getAgentDefendentReply(case_data, transcript, confidence, phase, evidence_name)
             return Response(reply, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

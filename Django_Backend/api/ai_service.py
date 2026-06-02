@@ -1,5 +1,6 @@
 import os
 import json
+import random
 from google import genai
 from google.genai import types 
 from dotenv import load_dotenv
@@ -16,10 +17,14 @@ def getAgentJsonAnswer(prompt):
   )
     
   raw_text = response.text.strip()
+  
+  print("==== AI RESPONSE ====")
+  print(raw_text)
+  print("=====================")
 
   return json.loads(raw_text) # Returnăm DOAR dicționarul curat!
 
-def genereaza_caz_cu_ai():
+def generateCase():
   prompt = '''You are a professional paralegal and scenario architect for a courtroom simulation game. Your task is to create a complex and balanced, but fun, fictional court case that allows for arguments for both the defense and the prosecution.
 The court case should be fun and interesting.
 You must generate the case details and respond STRICTLY with a valid JSON object. 
@@ -54,11 +59,31 @@ The JSON structure MUST be exactly the following:
   return getAgentJsonAnswer(prompt)
 
 
-def getAgentAcuserReply(case_json, spoken_statements, confidence_level="normal"):
- 
+def getAgentAcuserReply(case_json, spoken_statements, confidence_level="normal", phase="unknown", evidence_name=None):
+  
+  evidence_context = f"We are currently debating this piece of evidence: {evidence_name}" if evidence_name else "We are NOT currently discussing a specific piece of evidence."
+  
+  force_objection = False
+  if phase == 'evidence_debate' and len(spoken_statements) > 0:
+      last_action = spoken_statements[-1]
+      # Only consider objecting if the last action was a statement made by the defense
+      if last_action.get('kind') == 'evidence_argument' and last_action.get('side') == 'defense':
+          force_objection = random.choice([True, False])
+          
+  print(f"[PROSECUTOR] Phase: {phase}, Force Objection: {force_objection}")
+      
+  objection_rule = "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'objection' and provide a valid 'reason' to object to the opponent's last statement." if force_objection else "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'statement'. Do NOT object."
+
   prompt = f'''
 You are a relentless, logical, and justice-oriented prosecutor / prosecution lawyer. Your role is to demonstrate the defendant's guilt using available evidence, testimony, and irrefutable logic, demanding their punishment for the crimes committed against the victim.
 Your current confidence level is: {confidence_level}. If high, be aggressive and press hard. If low, be hesitant or flustered.
+
+TRIAL CONTEXT:
+Current Trial Phase: {phase}
+{evidence_context}
+{objection_rule}
+
+Do not try to call witnesses to the stand. You may however refer to them and their statements.
 
 You will receive the case details in JSON format. You must analyze the case and respond STRICTLY with a valid JSON object representing your next action. Do not include any other text, greetings, or formatting outside of the raw JSON object.
 
@@ -68,6 +93,14 @@ The JSON structure must be as follows:
   "reason": "If objection, provide reason like 'hearsay', 'leading', 'speculation', etc. Otherwise null.",
   "dialogue": "Your statement or the dialogue for your objection."
 }}
+
+Your dialogue reply must not exceed 500 characters. Make sure to space out your paragraphs on new lines if you have multiple.
+
+If the last event in the transcript is an 'objection_ruling', pay close attention:
+- If YOUR objection was 'sustained', you won. The opponent's last statement is stricken. You should confidently continue your point.
+- If YOUR objection was 'overruled' (rejected), you lost. You must accept the judge's decision and adjust your argument.
+- If YOUR OPPONENT'S objection against you was 'sustained', your last statement is stricken. You must apologize to the court and provide a new, different argument.
+- If YOUR OPPONENT'S objection against you was 'overruled' (rejected), you won. You may continue pressing your point.
 
 Here are your case details:
 {json.dumps(case_json)}
@@ -78,11 +111,31 @@ Here are the spoken statements from the case already:
     
   return getAgentJsonAnswer(prompt)
 
-def getAgentDefendentReply(case_json, spoken_statements, confidence_level="normal"):
- 
+def getAgentDefendentReply(case_json, spoken_statements, confidence_level="normal", phase="unknown", evidence_name=None):
+  
+  evidence_context = f"We are currently debating this piece of evidence: {evidence_name}" if evidence_name else "We are NOT currently discussing a specific piece of evidence."
+  
+  force_objection = False
+  if phase == 'evidence_debate' and len(spoken_statements) > 0:
+      last_action = spoken_statements[-1]
+      # Only consider objecting if the last action was a statement made by the prosecution
+      if last_action.get('kind') == 'evidence_argument' and last_action.get('side') == 'prosecution':
+          force_objection = random.choice([True, False])
+          
+  print(f"[DEFENSE] Phase: {phase}, Force Objection: {force_objection}")
+      
+  objection_rule = "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'objection' and provide a valid 'reason' to object to the opponent's last statement." if force_objection else "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'statement'. Do NOT object."
+
   prompt = f'''
 You are a top-tier defense attorney, extremely analytical, eloquent, and persuasive. Your role is to defend the accused in a given case, find loopholes in the prosecution's evidence, question the credibility of witnesses, and construct a narrative of innocence or mitigating circumstances.
 Your current confidence level is: {confidence_level}. If high, be aggressive and press hard. If low, be hesitant or flustered.
+
+TRIAL CONTEXT:
+Current Trial Phase: {phase}
+{evidence_context}
+{objection_rule}
+
+Do not try to call witnesses to the stand. You may however refer to them and their statements.
 
 You will receive the case details in JSON format. You must analyze the case and respond STRICTLY with a valid JSON object representing your next action. Do not include any other text, greetings, or formatting outside of the raw JSON object.
 
@@ -92,6 +145,14 @@ The JSON structure must be as follows:
   "reason": "If objection, provide reason like 'hearsay', 'leading', 'speculation', etc. Otherwise null.",
   "dialogue": "Your statement or the dialogue for your objection."
 }}
+
+Your dialogue reply must not exceed 500 characters. Make sure to space out your paragraphs on new lines if you have multiple.
+
+If the last event in the transcript is an 'objection_ruling', pay close attention:
+- If YOUR objection was 'sustained', you won. The opponent's last statement is stricken. You should confidently continue your point.
+- If YOUR objection was 'overruled' (rejected), you lost. You must accept the judge's decision and adjust your argument.
+- If YOUR OPPONENT'S objection against you was 'sustained', your last statement is stricken. You must apologize to the court and provide a new, different argument.
+- If YOUR OPPONENT'S objection against you was 'overruled' (rejected), you won. You may continue pressing your point.
 
 Here are your case details:
 {json.dumps(case_json)}

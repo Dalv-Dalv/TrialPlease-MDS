@@ -1,66 +1,19 @@
 import { create } from 'zustand'
 import { useLawyers } from '../lawyer-store/lawyerStore'
 import type { CaseData } from '../case-generator-store/caseGeneratorContext'
+import type {
+  AwaitingUser,
+  DebriefResult,
+  FlowState,
+  LawyerActionResponse,
+  ObjectionReason,
+  Phase,
+  Side,
+  SpokenAction,
+  TrialAction,
+} from './types'
 // TODO: replace mock imports with real backend calls once the AI service is ready.
-import {
-  MOCK_CLOSINGS,
-  MOCK_OPENINGS,
-  MOCK_RULING_RESPONSES,
-  findScriptedObjection,
-  nextScriptedArgument,
-} from '../../test/flow'
-
-export type Side = 'defense' | 'prosecution'
-
-export type ObjectionReason =
-  | 'leading'
-  | 'speculation'
-  | 'hearsay'
-  | 'relevance'
-  | 'badgering'
-  | 'argumentative'
-
-export type TrialAction =
-  | { id: string; ts: number; kind: 'opening_statement'; side: Side; text: string }
-  | { id: string; ts: number; kind: 'closing_statement'; side: Side; text: string }
-  | { id: string; ts: number; kind: 'evidence_argument'; side: Side; evidenceName: string; text: string }
-  | { id: string; ts: number; kind: 'pass_evidence'; side: Side; evidenceName: string }
-  | { id: string; ts: number; kind: 'objection'; side: Side; reason: ObjectionReason; targetId: string }
-  | { id: string; ts: number; kind: 'objection_ruling'; ruling: 'sustained' | 'overruled'; objectionId: string }
-  | { id: string; ts: number; kind: 'verdict'; verdict: string }
-
-export type Phase =
-  | 'pre_trial'
-  | 'opening_prosecution'
-  | 'opening_defense'
-  | 'evidence_debate'
-  | 'closing_prosecution'
-  | 'closing_defense'
-  | 'verdict'
-  | 'concluded'
-
-export type AwaitingUser = 'objection_ruling' | 'verdict' | null
-
-type FlowState = {
-  phase: Phase
-  activeSpeaker: Side | 'judge' | null
-  currentEvidenceIndex: number | null
-  evidencePassed: { defense: boolean; prosecution: boolean }
-  pendingObjection: { actionId: string; side: Side; reason: ObjectionReason } | null
-  awaitingUser: AwaitingUser
-  transcript: TrialAction[]
-
-  startTrial: (caseInfo: CaseData) => void
-  advancePhase: () => void
-  advanceEvidence: () => void
-  setActiveSpeaker: (s: Side | 'judge' | null) => void
-  appendAction: (a: TrialAction) => void
-  passEvidence: (side: Side, evidenceName: string) => void
-  raiseObjection: (by: Side, reason: ObjectionReason, targetId: string) => void
-  ruleOnObjection: (ruling: 'sustained' | 'overruled') => void
-  deliverVerdict: (verdict: string) => void
-  reset: () => void
-}
+import { mockLawyerAction, resetMockLawyerAction } from '../../test/flow'
 
 const initialState = {
   phase: 'pre_trial' as Phase,
@@ -70,7 +23,14 @@ const initialState = {
   pendingObjection: null,
   awaitingUser: null as AwaitingUser,
   transcript: [] as TrialAction[],
+  caseId: null as number | null,
+  confidence: { defense: 0.5, prosecution: 0.5 },
+  debrief: null as DebriefResult | null,
+  recentSpeech: [] as { id: string; side: Side | 'system'; text: string }[],
+  prefetch: null,
 }
+
+const RECENT_SPEECH_MAX = 8
 
 const newId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -89,251 +49,235 @@ const phaseOrder: Phase[] = [
 ]
 
 const opposite = (s: Side): Side => (s === 'prosecution' ? 'defense' : 'prosecution')
-const sideKey = (side: Side, evidenceName: string) => `${side}::${evidenceName}`
 
-function delay(ms: number) {
-  return new Promise<void>((r) => setTimeout(r, ms))
-}
 
-// === Module-scope loop state (intentionally outside FlowState) ==============
-// Tracks how many scripted arguments each side has delivered for each evidence.
-// Cleared on reset() / startTrial(). Not serializable with FlowState — if save
-// & resume is added later, hoist this into FlowState.
-const evidenceTurnsMap = new Map<string, number>()
-let loopRunning = false
-// Snapshot of the case being tried. Captured by startTrial() so the loop
-// (which runs outside React) can read evidence_items without going through
-// the case-generator React context.
+// Snapshot of the case being tried. The flow lives outside React, so we
+// capture it on startTrial() instead of going through the case-generator
+// context to read evidence_items by index.
 let currentCase: CaseData | null = null
 
-// === Lawyer-response fetchers ===============================================
-// These would normally hit the backend. Mocked for now; uncomment the fetch
-// blocks once `/api/lawyer/respond/` is live and remove the MOCK_* fallbacks.
+// Re-entrancy guard for advanceTurn(): repeated calls (e.g. spamming the
+// Continue button or holding Enter) collapse into a single in-flight turn.
+let advanceInProgress = false
+let currentTurnId = 0
 
-async function fetchOpeningStatement(side: Side): Promise<string> {
-  // const res = await fetch('http://127.0.0.1:8000/api/lawyer/respond/', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({
-  //     kind: 'opening_statement',
-  //     side,
-  //     transcript: useFlow.getState().transcript,
-  //     case: useCaseGenerator.getState?.().caseInfo, // (or pass case via arg)
-  //   }),
-  // })
-  // return (await res.json()).text as string
-  return MOCK_OPENINGS[side]
+// === API fetchers ============================================================
+// Hits the Django backend documented in BACKEND_CHANGES.md. URLs are relative
+// — Vite's dev server proxies `/api/*` to the backend (see vite.config.ts).
+// Falls back to the mocks in `src/test/flow.ts` when the network call fails so
+// dev continues to work without a live backend.
+
+/**
+ * Backend returns `{ action, reason, dialogue, confidence_level? }`.
+ * Map to the internal `LawyerActionResponse` shape (statement uses `text`).
+ */
+function normalizeLawyerAction(raw: {
+  action?: string
+  reason?: string | null
+  dialogue?: string | null
+  text?: string | null
+  confidence_level?: number
+}): LawyerActionResponse {
+  const confidence = raw.confidence_level ?? 0.5
+  if (raw.action === 'objection') {
+    return {
+      action: 'objection',
+      reason: (raw.reason ?? 'argumentative') as ObjectionReason,
+      confidence_level: confidence,
+    }
+  }
+  return {
+    action: 'statement',
+    text: raw.dialogue ?? raw.text ?? '',
+    confidence_level: confidence,
+  }
 }
 
-async function fetchClosingStatement(side: Side): Promise<string> {
-  // const res = await fetch('http://127.0.0.1:8000/api/lawyer/respond/', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({
-  //     kind: 'closing_statement',
-  //     side,
-  //     transcript: useFlow.getState().transcript,
-  //   }),
-  // })
-  // return (await res.json()).text as string
-  return MOCK_CLOSINGS[side]
-}
-
-async function fetchEvidenceArgument(side: Side, evidenceName: string): Promise<string | null> {
-  // const res = await fetch('http://127.0.0.1:8000/api/lawyer/respond/', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({
-  //     kind: 'evidence_argument',
-  //     side,
-  //     evidenceName,
-  //     transcript: useFlow.getState().transcript,
-  //   }),
-  // })
-  // const data = await res.json()
-  // return data.text ?? null // server returns null/empty when the side wants to pass
-  const key = sideKey(side, evidenceName)
-  const turns = evidenceTurnsMap.get(key) ?? 0
-  const text = nextScriptedArgument(side, evidenceName, turns)
-  if (text != null) evidenceTurnsMap.set(key, turns + 1)
-  return text
-}
-
-async function fetchObjectionDecision(
+async function fetchLawyerAction(
+  caseId: number,
   side: Side,
-  opponentAction: TrialAction,
-): Promise<{ objects: false } | { objects: true; reason: ObjectionReason }> {
-  // const res = await fetch('http://127.0.0.1:8000/api/lawyer/objection/', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ side, opponentAction }),
-  // })
-  // return (await res.json()) as { objects: boolean; reason?: ObjectionReason }
-  const match = findScriptedObjection(side, opponentAction)
-  if (!match) return { objects: false }
-  return { objects: true, reason: match.reason }
+  confidence: number,
+  phase: Phase,
+  currentEvidenceName: string | null,
+  transcript: TrialAction[],
+): Promise<LawyerActionResponse> {
+  try {
+    if (!caseId) throw new Error('missing caseId')
+    const res = await fetch(`/api/cases/${caseId}/lawyer_action/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lawyer_type: side === 'prosecution' ? 'prosecutor' : 'defense',
+        confidence_level: confidence,
+        phase,
+        evidence_name: currentEvidenceName,
+        transcript,
+        phase,
+        evidence_name: currentEvidenceName,
+      }),
+    })
+    if (!res.ok) throw new Error(`lawyer_action ${res.status}`)
+    return normalizeLawyerAction(await res.json())
+  } catch (err) {
+    console.warn('[flow] lawyer_action API failed, falling back to mock:', err)
+    return mockLawyerAction(side, phase, currentEvidenceName, transcript, confidence)
+  }
 }
 
-async function fetchRulingResponse(
-  side: Side,
-  ruling: 'sustained' | 'overruled',
-): Promise<string | null> {
-  // const res = await fetch('http://127.0.0.1:8000/api/lawyer/respond-to-ruling/', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ side, ruling, transcript: useFlow.getState().transcript }),
-  // })
-  // const data = await res.json()
-  // return data.text ?? null
-  return MOCK_RULING_RESPONSES[ruling][side]
+async function fetchDebrief(caseId: number, verdict: string): Promise<DebriefResult> {
+  try {
+    if (!caseId) throw new Error('missing caseId')
+    const res = await fetch(`/api/cases/${caseId}/debrief/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verdict }),
+    })
+    if (!res.ok) throw new Error(`debrief ${res.status}`)
+    const raw = await res.json()
+    return { ...raw, user_verdict: verdict } as DebriefResult
+  } catch (err) {
+    console.warn('[flow] debrief API failed, falling back to stub:', err)
+    const correct = verdict === currentCase?.correct_verdict
+    return {
+      verdict_correct: correct,
+      correct_verdict: currentCase?.correct_verdict ?? 'Unknown',
+      user_verdict: verdict,
+      absolute_truth:
+        currentCase != null
+          ? `(stub) the absolute truth would be returned by the backend; ${correct ? 'your verdict matches' : 'your verdict does not match'} the recorded correct verdict (${currentCase.correct_verdict}).`
+          : '',
+    }
+  }
 }
 
-// === Speech / appendAction helpers =========================================
+// === Speech / appendAction helpers ==========================================
 
-// How long to leave an utterance on screen before the next speaker takes over.
-// Scales with text length: ~45ms per character, clamped to a sensible window.
-function readingTimeMs(text: string): number {
-  return Math.min(8000, Math.max(2200, text.length * 45))
-}
-
-async function speak(side: Side, text: string) {
+/** Set the lawyer side into "thinking" — clears prior utterance so the HUD
+ *  shows "..." immediately instead of the previous speech. */
+function beginThinking(side: Side) {
+  useLawyers.getState().setUtterance(side, null)
   useLawyers.getState().setThinking(side, true)
-  await delay(500)
+}
+
+/** Commit a freshly-spoken utterance: clear thinking, store text, push to
+ *  the recent-speech ring buffer for the HUD. */
+function commitSpeech(side: Side, text: string) {
+  const id = newId()
   useLawyers.getState().setThinking(side, false)
   useLawyers.getState().setUtterance(side, text)
-  await delay(readingTimeMs(text))
+  useFlow.setState((s) => ({
+    recentSpeech: [...s.recentSpeech, { id, side, text }],
+  }))
 }
 
-type SpokenAction = Extract<
-  TrialAction,
-  { kind: 'opening_statement' | 'closing_statement' | 'evidence_argument' }
->
-
-async function maybeRaiseObjection(againstAction: SpokenAction) {
-  const objector = opposite(againstAction.side)
-  const decision = await fetchObjectionDecision(objector, againstAction)
-  if (!decision.objects) return
-  useFlow.getState().raiseObjection(objector, decision.reason, againstAction.id)
-  // Auto-decline (overrule) for now — UI for sustain/overrule will be wired later.
-  // TODO: when the user-controlled ruling UI is ready, defer to user input here
-  //       and call fetchRulingResponse(againstAction.side, 'sustained') on a
-  //       sustained ruling to append the speaker's rephrase.
-  await delay(2000)
-  useFlow.getState().ruleOnObjection('overruled')
-  void fetchRulingResponse // keep import live until sustained-ruling path is wired
+/** Clear the thinking flag without committing speech (used on objections). */
+function endThinking(side: Side) {
+  useLawyers.getState().setThinking(side, false)
 }
 
-// === The driving loop =======================================================
+const isSpoken = (a: TrialAction): a is SpokenAction =>
+  a.kind === 'opening_statement' ||
+  a.kind === 'closing_statement' ||
+  a.kind === 'evidence_argument'
 
-async function runLoop() {
-  if (loopRunning) return
-  loopRunning = true
-  try {
-    while (true) {
-      const flow = useFlow.getState()
-      if (flow.phase === 'pre_trial' || flow.phase === 'concluded') return
-      if (flow.awaitingUser === 'verdict') return
-      // awaitingUser === 'objection_ruling' is always inline-resolved by
-      // maybeRaiseObjection while auto-decline is in effect.
-
-      await runOneStep()
-    }
-  } finally {
-    loopRunning = false
+function lastSpokenBy(transcript: TrialAction[], side: Side): SpokenAction | null {
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    const a = transcript[i]
+    if (isSpoken(a) && a.side === side) return a
   }
+  return null
 }
 
-async function runOneStep() {
-  const flow = useFlow.getState()
+/** Filters the transcript to only include actions from the current evidence debate. */
+function filterTranscriptForEvidence(transcript: TrialAction[], phase: Phase, evidenceName: string | null): TrialAction[] {
+  if (phase !== 'evidence_debate' || !evidenceName) return transcript
 
-  switch (flow.phase) {
-    case 'opening_prosecution':
-    case 'opening_defense': {
-      const side: Side = flow.phase === 'opening_prosecution' ? 'prosecution' : 'defense'
-      const text = await fetchOpeningStatement(side)
-      await speak(side, text)
-      const action: TrialAction = {
-        id: newId(),
-        ts: Date.now(),
-        kind: 'opening_statement',
-        side,
-        text,
-      }
-      useFlow.getState().appendAction(action)
-      await maybeRaiseObjection(action)
-      useFlow.getState().advancePhase()
-      return
+  // Find the last pass_evidence that does NOT match the current evidence
+  let lastOtherPassIndex = -1
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    const a = transcript[i]
+    if (a.kind === 'pass_evidence' && a.evidenceName !== evidenceName) {
+      lastOtherPassIndex = i
+      break
     }
+  }
 
-    case 'closing_prosecution':
-    case 'closing_defense': {
-      const side: Side = flow.phase === 'closing_prosecution' ? 'prosecution' : 'defense'
-      const text = await fetchClosingStatement(side)
-      await speak(side, text)
-      const action: TrialAction = {
-        id: newId(),
-        ts: Date.now(),
-        kind: 'closing_statement',
-        side,
-        text,
-      }
-      useFlow.getState().appendAction(action)
-      await maybeRaiseObjection(action)
-      useFlow.getState().advancePhase()
-      return
+  if (lastOtherPassIndex !== -1) {
+    return transcript.slice(lastOtherPassIndex + 1)
+  }
+
+  // If no previous evidence, find the end of opening statements
+  let lastOpeningIndex = -1
+  for (let i = transcript.length - 1; i >= 0; i--) {
+    if (transcript[i].kind === 'opening_statement') {
+      lastOpeningIndex = i
+      break
     }
+  }
 
-    case 'evidence_debate': {
-      const caseInfo = currentCase
-      if (!caseInfo) {
-        // Should not happen if user followed the flow, but bail safely.
-        useFlow.getState().advancePhase()
-        return
-      }
-      const idx = flow.currentEvidenceIndex ?? 0
-      const evidence = caseInfo.evidence_items[idx]
-      if (!evidence) {
-        useFlow.getState().advancePhase()
-        return
-      }
+  if (lastOpeningIndex !== -1) {
+    return transcript.slice(lastOpeningIndex + 1)
+  }
 
+  return transcript
+}
+
+function computeNextState(flow: FlowState, totalEvidenceItems: number): Partial<FlowState> {
+  const patch: Partial<FlowState> = {}
+  const lastAction = flow.transcript[flow.transcript.length - 1]
+  if (!lastAction) return patch
+
+  if (
+    (flow.phase === 'opening_prosecution' && lastAction.kind === 'opening_statement' && lastAction.side === 'prosecution') ||
+    (flow.phase === 'opening_defense' && lastAction.kind === 'opening_statement' && lastAction.side === 'defense') ||
+    (flow.phase === 'closing_prosecution' && lastAction.kind === 'closing_statement' && lastAction.side === 'prosecution') ||
+    (flow.phase === 'closing_defense' && lastAction.kind === 'closing_statement' && lastAction.side === 'defense')
+  ) {
+    const idx = phaseOrder.indexOf(flow.phase)
+    const next = phaseOrder[idx + 1] ?? 'concluded'
+    patch.phase = next
+
+    if (next === 'opening_defense') patch.activeSpeaker = 'defense'
+    else if (next === 'evidence_debate') {
+      patch.activeSpeaker = 'prosecution'
+      patch.currentEvidenceIndex = 0
+      patch.evidencePassed = { defense: false, prosecution: false }
+    } else if (next === 'closing_prosecution') {
+      patch.activeSpeaker = 'prosecution'
+      patch.currentEvidenceIndex = null
+      patch.evidencePassed = { defense: false, prosecution: false }
+    } else if (next === 'closing_defense') patch.activeSpeaker = 'defense'
+    else if (next === 'verdict') {
+      patch.activeSpeaker = 'judge'
+      patch.awaitingUser = 'verdict'
+    } else if (next === 'concluded') patch.activeSpeaker = null
+
+  } else if (flow.phase === 'evidence_debate') {
+    if (lastAction.kind === 'objection_ruling') {
+      const objection = flow.transcript.find((a) => a.id === lastAction.objectionId)
+      if (objection && objection.kind === 'objection') {
+        patch.activeSpeaker = opposite(objection.side)
+      }
+    } else if (lastAction.kind === 'evidence_argument' || lastAction.kind === 'pass_evidence') {
       if (flow.evidencePassed.defense && flow.evidencePassed.prosecution) {
-        if (idx + 1 < caseInfo.evidence_items.length) {
-          useFlow.getState().advanceEvidence()
+        const idx = flow.currentEvidenceIndex ?? 0
+        if (idx + 1 < totalEvidenceItems) {
+          patch.currentEvidenceIndex = idx + 1
+          patch.evidencePassed = { defense: false, prosecution: false }
+          patch.activeSpeaker = 'prosecution'
         } else {
-          useFlow.getState().advancePhase()
+          patch.phase = 'closing_prosecution'
+          patch.activeSpeaker = 'prosecution'
+          patch.currentEvidenceIndex = null
+          patch.evidencePassed = { defense: false, prosecution: false }
         }
-        return
+      } else if (lastAction.side === flow.activeSpeaker) {
+        patch.activeSpeaker = opposite(flow.activeSpeaker)
       }
-
-      const speaker = flow.activeSpeaker
-      if (speaker !== 'defense' && speaker !== 'prosecution') return
-
-      const text = await fetchEvidenceArgument(speaker, evidence.name)
-      if (text == null) {
-        useFlow.getState().passEvidence(speaker, evidence.name)
-      } else {
-        await speak(speaker, text)
-        const action: TrialAction = {
-          id: newId(),
-          ts: Date.now(),
-          kind: 'evidence_argument',
-          side: speaker,
-          evidenceName: evidence.name,
-          text,
-        }
-        useFlow.getState().appendAction(action)
-        await maybeRaiseObjection(action)
-      }
-      useFlow.getState().setActiveSpeaker(opposite(speaker))
-      return
     }
-
-    case 'pre_trial':
-    case 'verdict':
-    case 'concluded':
-      return
   }
+
+  return patch
 }
 
 // === Store ==================================================================
@@ -343,15 +287,249 @@ export const useFlow = create<FlowState>((set, get) => ({
 
   startTrial: (caseInfo) => {
     currentCase = caseInfo
-    evidenceTurnsMap.clear()
+    advanceInProgress = false
+    resetMockLawyerAction()
     useLawyers.getState().reset()
     set({
       ...initialState,
+      caseId: caseInfo.id,
       phase: 'opening_prosecution',
       activeSpeaker: 'prosecution',
+      recentSpeech: [{ id: newId(), side: 'system', text: 'PROSECUTION OPENING STATEMENT' }],
     })
-    void runLoop()
+    setTimeout(() => get().advanceTurn(), 0)
   },
+
+  advanceTurn: async () => {
+    if (advanceInProgress) return
+    const flow = get()
+    if (flow.awaitingUser) return
+    if (
+      flow.phase === 'pre_trial' ||
+      flow.phase === 'concluded' ||
+      flow.phase === 'verdict'
+    ) {
+      return
+    }
+
+    // --- 1. STATE TRANSITION ---
+    // The previous turn has finished and the user clicked Continue. 
+    // Advance the state based on the LAST action in the transcript BEFORE fetching the next action.
+    const lastAction = flow.transcript[flow.transcript.length - 1]
+
+    if (lastAction) {
+      const patch = computeNextState(flow, currentCase?.evidence_items.length ?? 0)
+      if (Object.keys(patch).length > 0) {
+        set(patch)
+
+        const newPhase = patch.phase ?? flow.phase
+        const newEvidenceIndex = patch.currentEvidenceIndex !== undefined ? patch.currentEvidenceIndex : flow.currentEvidenceIndex
+        
+        if (newPhase !== flow.phase || newEvidenceIndex !== flow.currentEvidenceIndex) {
+          let msg = ''
+          if (newPhase === 'opening_defense') msg = "DEFENSE OPENING STATEMENT"
+          else if (newPhase === 'evidence_debate') {
+            const eName = currentCase?.evidence_items[newEvidenceIndex ?? 0]?.name
+            msg = `EVIDENCE: ${eName}`
+          } else if (newPhase === 'closing_prosecution') msg = "PROSECUTION CLOSING STATEMENT"
+          else if (newPhase === 'closing_defense') msg = "DEFENSE CLOSING STATEMENT"
+          
+          if (msg) {
+            set((s) => ({
+              // @ts-ignore Side | 'system' is fine here
+              recentSpeech: [...s.recentSpeech, { id: newId(), side: 'system', text: msg }]
+            }))
+          }
+        }
+      }
+    }
+
+    // Now, get the FRESH state after potential advancement
+    const currentFlow = get()
+    const speaker = currentFlow.activeSpeaker
+
+    if (currentFlow.phase === 'verdict' || currentFlow.phase === 'concluded') {
+      return
+    }
+
+    if (speaker !== 'defense' && speaker !== 'prosecution') return
+
+    advanceInProgress = true
+    const turnId = ++currentTurnId
+
+    // Show "..." immediately so the user gets feedback while the API is in flight.
+    beginThinking(speaker)
+    try {
+      const evidenceName =
+        currentFlow.phase === 'evidence_debate' && currentFlow.currentEvidenceIndex != null
+          ? (currentCase?.evidence_items[currentFlow.currentEvidenceIndex]?.name ?? null)
+          : null
+
+      let response: LawyerActionResponse
+      const pf = currentFlow.prefetch
+      if (
+        pf &&
+        pf.phase === currentFlow.phase &&
+        pf.speaker === speaker &&
+        pf.evidenceIndex === currentFlow.currentEvidenceIndex &&
+        pf.transcriptLength === currentFlow.transcript.length
+      ) {
+        console.debug('[flow] using prefetched lawyer_action response')
+        response = await pf.promise
+        set({ prefetch: null })
+      } else {
+        const transcriptToSend = filterTranscriptForEvidence(currentFlow.transcript, currentFlow.phase, evidenceName)
+
+        response = await fetchLawyerAction(
+          currentFlow.caseId ?? 0,
+          speaker,
+          currentFlow.confidence[speaker],
+          currentFlow.phase,
+          evidenceName,
+          transcriptToSend,
+        )
+      }
+      
+      if (currentTurnId !== turnId) {
+        console.debug('[flow] discarding lawyer_action response due to turn cancellation')
+        return
+      }
+
+      console.debug('[flow] lawyer_action response', { phase: currentFlow.phase, speaker, response })
+
+      if (response.action === 'objection') {
+        endThinking(speaker)
+        const target = lastSpokenBy(currentFlow.transcript, opposite(speaker))
+        if (!target) return
+        get().raiseObjection(speaker, response.reason, target.id)
+        return
+      }
+
+      const text = response.text ?? ''
+      if (text) commitSpeech(speaker, text)
+      else endThinking(speaker)
+
+      // ── Append action (Phase/Speaker transition deferred to next turn) ──
+      if (currentFlow.phase === 'opening_prosecution' || currentFlow.phase === 'opening_defense') {
+        get().appendAction({
+          id: newId(),
+          ts: Date.now(),
+          kind: 'opening_statement',
+          side: speaker,
+          text,
+        })
+      } else if (currentFlow.phase === 'closing_prosecution' || currentFlow.phase === 'closing_defense') {
+        get().appendAction({
+          id: newId(),
+          ts: Date.now(),
+          kind: 'closing_statement',
+          side: speaker,
+          text,
+        })
+      } else if (currentFlow.phase === 'evidence_debate' && evidenceName) {
+        if (!text) {
+          get().passEvidence(speaker, evidenceName)
+        } else {
+          get().appendAction({
+            id: newId(),
+            ts: Date.now(),
+            kind: 'evidence_argument',
+            side: speaker,
+            evidenceName,
+            text,
+          })
+          // New material on the table — opponent gets a fresh chance to rebut.
+          set((s) => ({
+            evidencePassed: { ...s.evidencePassed, [opposite(speaker)]: false },
+          }))
+        }
+      }
+    } finally {
+      if (currentTurnId === turnId) {
+        advanceInProgress = false
+        setTimeout(() => get().prefetchNextTurn(), 0)
+      }
+    }
+  },
+
+  raiseObjection: (by, reason, targetId) => {
+    const action: TrialAction = {
+      id: newId(),
+      ts: Date.now(),
+      kind: 'objection',
+      side: by,
+      reason,
+      targetId,
+    }
+    set((s) => ({
+      transcript: [...s.transcript, action],
+      pendingObjection: { actionId: action.id, side: by, reason },
+      awaitingUser: 'objection_ruling',
+    }))
+  },
+
+  approveObjection: () => {
+    const pending = get().pendingObjection
+    if (!pending) return
+    const ruling: TrialAction = {
+      id: newId(),
+      ts: Date.now(),
+      kind: 'objection_ruling',
+      ruling: 'sustained',
+      objectionId: pending.actionId,
+    }
+    set((s) => ({
+      transcript: [...s.transcript, ruling],
+      pendingObjection: null,
+      awaitingUser: null,
+    }))
+  },
+
+  opposeObjection: () => {
+    const pending = get().pendingObjection
+    if (!pending) return
+    const ruling: TrialAction = {
+      id: newId(),
+      ts: Date.now(),
+      kind: 'objection_ruling',
+      ruling: 'overruled',
+      objectionId: pending.actionId,
+    }
+    set((s) => ({
+      transcript: [...s.transcript, ruling],
+      pendingObjection: null,
+      awaitingUser: null,
+    }))
+  },
+
+  deliverVerdict: async (verdict) => {
+    const action: TrialAction = {
+      id: newId(),
+      ts: Date.now(),
+      kind: 'verdict',
+      verdict,
+    }
+    const caseId = get().caseId ?? 0
+    set((s) => ({
+      transcript: [...s.transcript, action],
+      awaitingUser: null,
+      phase: 'concluded',
+      activeSpeaker: null,
+    }))
+    const result = await fetchDebrief(caseId, verdict)
+    set({ debrief: result })
+    return result
+  },
+
+  reset: () => {
+    currentCase = null
+    advanceInProgress = false
+    resetMockLawyerAction()
+    useLawyers.getState().reset()
+    set({ ...initialState })
+  },
+
+  // === Internal mutations =====================================================
 
   advancePhase: () => {
     const { phase } = get()
@@ -398,59 +576,74 @@ export const useFlow = create<FlowState>((set, get) => ({
       evidencePassed: { ...s.evidencePassed, [side]: true },
     })),
 
-  raiseObjection: (by, reason, targetId) => {
-    const action: TrialAction = {
-      id: newId(),
-      ts: Date.now(),
-      kind: 'objection',
-      side: by,
-      reason,
-      targetId,
-    }
-    set((s) => ({
-      transcript: [...s.transcript, action],
-      pendingObjection: { actionId: action.id, side: by, reason },
-      awaitingUser: 'objection_ruling',
-    }))
+  prefetchNextTurn: () => {
+    const flow = get()
+    if (flow.phase === 'verdict' || flow.phase === 'concluded' || flow.awaitingUser) return
+
+    const totalEvidence = currentCase?.evidence_items.length ?? 0
+    const patch = computeNextState(flow, totalEvidence)
+
+    const nextPhase = patch.phase ?? flow.phase
+    const nextSpeaker = patch.activeSpeaker ?? flow.activeSpeaker
+    const nextEvidenceIndex = patch.currentEvidenceIndex !== undefined ? patch.currentEvidenceIndex : flow.currentEvidenceIndex
+
+    if (nextPhase === 'verdict' || nextPhase === 'concluded') return
+    if (nextSpeaker !== 'defense' && nextSpeaker !== 'prosecution') return
+
+    const evidenceName =
+      nextPhase === 'evidence_debate' && nextEvidenceIndex != null
+        ? (currentCase?.evidence_items[nextEvidenceIndex]?.name ?? null)
+        : null
+
+    const transcriptToSend = filterTranscriptForEvidence(flow.transcript, nextPhase, evidenceName)
+
+    const promise = fetchLawyerAction(
+      flow.caseId ?? 0,
+      nextSpeaker,
+      flow.confidence[nextSpeaker],
+      nextPhase,
+      evidenceName,
+      transcriptToSend // transcript already has the latest action appended
+    )
+
+    set({
+      prefetch: {
+        phase: nextPhase,
+        speaker: nextSpeaker,
+        evidenceIndex: nextEvidenceIndex,
+        promise,
+        transcriptLength: flow.transcript.length,
+      },
+    })
   },
 
-  ruleOnObjection: (ruling) => {
-    const pending = get().pendingObjection
-    if (!pending) return
-    const action: TrialAction = {
-      id: newId(),
-      ts: Date.now(),
-      kind: 'objection_ruling',
-      ruling,
-      objectionId: pending.actionId,
-    }
-    set((s) => ({
-      transcript: [...s.transcript, action],
-      pendingObjection: null,
-      awaitingUser: null,
-    }))
-  },
+  skipCurrentEvidence: () => {
+    const s = get()
+    if (s.phase !== 'evidence_debate' || s.currentEvidenceIndex == null || s.awaitingUser) return
+    const evidenceName = currentCase?.evidence_items[s.currentEvidenceIndex]?.name ?? null
+    if (!evidenceName) return
 
-  deliverVerdict: (verdict) => {
-    const action: TrialAction = {
-      id: newId(),
-      ts: Date.now(),
-      kind: 'verdict',
-      verdict,
-    }
-    set((s) => ({
-      transcript: [...s.transcript, action],
-      awaitingUser: null,
-      phase: 'concluded',
-      activeSpeaker: null,
-    }))
-  },
+    // Cancel any in-flight turn
+    currentTurnId++
+    advanceInProgress = false
 
-  reset: () => {
-    currentCase = null
-    evidenceTurnsMap.clear()
-    useLawyers.getState().reset()
-    set({ ...initialState })
+    // Clear thinking state in case a side was actively fetching
+    endThinking('prosecution')
+    endThinking('defense')
+
+    // Clear prefetch cache and append pass actions
+    const ts = Date.now()
+    const action1: TrialAction = { id: newId(), ts, kind: 'pass_evidence', side: 'prosecution', evidenceName }
+    const action2: TrialAction = { id: newId(), ts: ts + 1, kind: 'pass_evidence', side: 'defense', evidenceName }
+
+    set((state) => ({
+      prefetch: null,
+      transcript: [...state.transcript, action1, action2],
+      evidencePassed: { prosecution: true, defense: true },
+    }))
+
+    // Trigger the next turn immediately
+    setTimeout(() => get().advanceTurn(), 0)
   },
 }))
 
