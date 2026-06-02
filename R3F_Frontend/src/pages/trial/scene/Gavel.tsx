@@ -68,6 +68,18 @@ export const Gavel = forwardRef<GavelHandle, GavelProps>(({ nodes, materials }, 
         const bounceTime = 0.50  // Time it takes to bounce back up slightly
         const settleTime = 0.60  // Time it takes to settle back to rest
 
+        // 🔴 ADJUST: Sound Settings
+        const soundVolume = 0.7; // Volume from 0.0 (mute) to 1.0 (max)
+        const soundTriggerTime = strikeTime - 3.0; // Adjust the + 0.0 to delay (e.g. + 0.1) or advance (e.g. - 0.1) the sound
+
+        // --- PLAY SOUND BASED ON TRIGGER TIME ---
+        if (!animState.current.hasPlayedSound && t >= soundTriggerTime && audioRef.current) {
+            audioRef.current.volume = soundVolume
+            audioRef.current.currentTime = 0
+            audioRef.current.play().catch(e => console.warn("Audio play blocked by browser", e))
+            animState.current.hasPlayedSound = true
+        }
+
         // 🔴 ADJUST: Animation Intensities
         const liftHeight = 0.2          // How high the gavel lifts during windup
         const windupAngle = -Math.PI / 6 // Angle it tilts back during windup
@@ -92,12 +104,6 @@ export const Gavel = forwardRef<GavelHandle, GavelProps>(({ nodes, materials }, 
             currentY = liftHeight * (1 - ease)
             currentRot = windupAngle - (windupAngle - strikeAngle) * ease
         } else if (t < bounceTime) {
-            // --- PLAY SOUND EXACTLY ON STRIKE ---
-            if (!animState.current.hasPlayedSound && audioRef.current) {
-                audioRef.current.currentTime = 0
-                audioRef.current.play().catch(e => console.warn("Audio play blocked by browser", e))
-                animState.current.hasPlayedSound = true
-            }
             // 3. BOUNCE RECOIL
             const progress = (t - strikeTime) / (bounceTime - strikeTime)
             const ease = Math.sin(progress * Math.PI / 2) // ease-out
