@@ -7,6 +7,7 @@ export interface Evidence {
   id: number
   name: string
   description: string
+  images?: { id: number; image_url: string; caption?: string }[]
 }
 
 export interface Witness {
