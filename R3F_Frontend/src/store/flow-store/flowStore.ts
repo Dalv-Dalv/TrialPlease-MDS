@@ -166,7 +166,7 @@ function commitSpeech(side: Side, text: string) {
   useLawyers.getState().setThinking(side, false)
   useLawyers.getState().setUtterance(side, text)
   useFlow.setState((s) => ({
-    recentSpeech: [...s.recentSpeech, { id, side, text }],
+    recentSpeech: [...s.recentSpeech, { id, side, text }].slice(-RECENT_SPEECH_MAX),
   }))
 }
 
@@ -337,7 +337,7 @@ export const useFlow = create<FlowState>((set, get) => ({
           if (msg) {
             set((s) => ({
               // @ts-ignore Side | 'system' is fine here
-              recentSpeech: [...s.recentSpeech, { id: newId(), side: 'system', text: msg }]
+              recentSpeech: [...s.recentSpeech, { id: newId(), side: 'system', text: msg }].slice(-RECENT_SPEECH_MAX)
             }))
           }
         }
@@ -418,6 +418,7 @@ export const useFlow = create<FlowState>((set, get) => ({
           side: speaker,
           text,
         })
+        if (!text) setTimeout(() => get().advanceTurn(), 0)
       } else if (currentFlow.phase === 'closing_prosecution' || currentFlow.phase === 'closing_defense') {
         get().appendAction({
           id: newId(),
@@ -426,9 +427,11 @@ export const useFlow = create<FlowState>((set, get) => ({
           side: speaker,
           text,
         })
+        if (!text) setTimeout(() => get().advanceTurn(), 0)
       } else if (currentFlow.phase === 'evidence_debate' && evidenceName) {
         if (!text) {
           get().passEvidence(speaker, evidenceName)
+          setTimeout(() => get().advanceTurn(), 0)
         } else {
           get().appendAction({
             id: newId(),
