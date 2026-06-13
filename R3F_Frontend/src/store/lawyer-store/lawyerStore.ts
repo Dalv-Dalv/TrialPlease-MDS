@@ -3,7 +3,7 @@ import type { Side } from '../flow-store/types'
 import { MOCK_PERSONAS } from '../../test/flow'
 
 export type LawyerSideState = {
-  persona: { name: string; style: string }
+  persona: { name: string; style: string; gender: 'male' | 'female' }
   isThinking: boolean
   lastUtterance: string | null
 }

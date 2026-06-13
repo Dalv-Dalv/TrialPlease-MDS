@@ -1,8 +1,10 @@
 // Speech Synthesis Utility to parse simple SSML and control the WebSpeech API
+import { useLawyers } from '../store/lawyer-store/lawyerStore'
 
 let currentTimeouts: number[] = []
 let globalSpeechRate = 1.0
 let assignedVoices: { prosecution: SpeechSynthesisVoice | null, defense: SpeechSynthesisVoice | null } | null = null
+let currentSessionId = 0
 
 export function setGlobalSpeechRate(rate: number) {
   globalSpeechRate = rate
@@ -13,6 +15,7 @@ export function resetVoices() {
 }
 
 export function stopSpeech() {
+  currentSessionId++
   if (typeof window === 'undefined' || !window.speechSynthesis) return
   window.speechSynthesis.cancel()
   
@@ -31,23 +34,47 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
   
   // Always stop existing speech before starting a new one
   stopSpeech()
+  const sessionId = currentSessionId
 
   // Find a distinct voice if possible
   const voices = getVoices()
   
   if (!assignedVoices && voices.length > 0) {
-    if (voices.length > 1) {
-      // Pick 2 random distinct voices
-      const shuffled = [...voices].sort(() => 0.5 - Math.random())
-      assignedVoices = {
-        prosecution: shuffled[0],
-        defense: shuffled[1]
+    const pGender = useLawyers.getState().prosecution.persona.gender;
+    const dGender = useLawyers.getState().defense.persona.gender;
+
+    const maleNames = ['david', 'mark', 'george', 'james', 'richard', 'alex', 'daniel', 'fred', 'rishi', 'arthur', 'brian', 'male'];
+    const femaleNames = ['zira', 'samantha', 'victoria', 'karen', 'susan', 'hazel', 'catherine', 'linda', 'fiona', 'moira', 'tessa', 'veena', 'female', 'girl', 'woman'];
+
+    const getVoicesByGender = (gender: 'male' | 'female') => {
+      const filtered = voices.filter(v => {
+        const name = v.name.toLowerCase();
+        if (gender === 'male') {
+          return maleNames.some(n => name.includes(n)) && !name.includes('female');
+        } else {
+          return femaleNames.some(n => name.includes(n));
+        }
+      });
+      return filtered.length > 0 ? filtered : voices;
+    };
+
+    const pVoices = getVoicesByGender(pGender);
+    const dVoices = getVoicesByGender(dGender);
+
+    let pVoice = pVoices[Math.floor(Math.random() * pVoices.length)];
+    let dVoice = dVoices[Math.floor(Math.random() * dVoices.length)];
+
+    // Ensure distinct voices if same gender and multiple options exist
+    if (pVoice === dVoice && pGender === dGender && pVoices.length > 1) {
+      const alternatives = pVoices.filter(v => v !== pVoice);
+      if (alternatives.length > 0) {
+        dVoice = alternatives[Math.floor(Math.random() * alternatives.length)];
       }
-    } else {
-      assignedVoices = {
-        prosecution: voices[0],
-        defense: voices[0]
-      }
+    }
+
+    assignedVoices = {
+      prosecution: pVoice,
+      defense: dVoice
     }
   }
   
@@ -120,6 +147,7 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
 
   // Play sequence recursively
   function playNext(index: number) {
+    if (currentSessionId !== sessionId) return
     if (index >= sequence.length) return
 
     const item = sequence[index]
