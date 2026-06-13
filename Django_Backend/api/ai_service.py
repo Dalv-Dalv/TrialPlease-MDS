@@ -176,3 +176,64 @@ Previous Statements: {json.dumps(spoken_statements)}
 Lawyer's Question: {lawyer_question}
 '''
         return self.get_json_answer(prompt)
+
+
+class AIEvaluator(GeminiAgent):
+    """Responsible for evaluating the quality of AI responses."""
+    
+    def evaluate_lawyer_reply(self, case_json: dict, spoken_statements: list, role: str, reply: dict) -> dict:
+        """Evaluates a lawyer's reply (Prosecutor or Defense) for quality."""
+        prompt = f"""You are an expert AI quality evaluator and legal analyst. Your task is to evaluate the quality of an AI-generated courtroom response (either prosecutor or defense) based on the case details and the transcript of spoken statements.
+
+You must evaluate the response on the following criteria:
+1. Role Adherence (1-10): Did the AI sound like a proper lawyer of their side?
+2. Coherence and Flow (1-10): Is the reply logical and coherent?
+3. Relevance (1-10): Is the response directly relevant to the case context and the trial transcript?
+4. Quality of Argument (1-10): Is the argument persuasive or logical?
+5. Overall Quality (1-10): Combined score.
+6. Feedback: Detailed commentary on what was good or what could be improved.
+
+Response to evaluate:
+{json.dumps(reply)}
+
+Context:
+Role: {role}
+Case Details: {json.dumps(case_json)}
+Transcript: {json.dumps(spoken_statements)}
+
+Respond STRICTLY with a valid JSON object of this structure:
+{{
+  "role_adherence": <score between 1 and 10>,
+  "coherence": <score between 1 and 10>,
+  "relevance": <score between 1 and 10>,
+  "argument_quality": <score between 1 and 10>,
+  "overall_quality": <score between 1 and 10>,
+  "feedback": "detailed feedback text"
+}}
+"""
+        return self.get_json_answer(prompt)
+
+    def evaluate_case_generation(self, generated_case: dict) -> dict:
+        """Evaluates the quality of a generated courtroom case."""
+        prompt = f"""You are an expert scenario evaluator. Evaluate the quality of the generated courtroom case.
+
+Criteria:
+1. Scenario Coherence (1-10): Are case description, police report, and absolute truth consistent?
+2. Legal Playability (1-10): Is the case interesting and balanced for both prosecution and defense?
+3. Completeness (1-10): Are evidence items and witnesses fully detailed and relevant?
+4. Overall Quality (1-10): Combined score.
+5. Feedback: Detailed commentary on what was good or what could be improved.
+
+Respond STRICTLY with a valid JSON object of this structure:
+{{
+  "scenario_coherence": <score between 1 and 10>,
+  "legal_playability": <score between 1 and 10>,
+  "completeness": <score between 1 and 10>,
+  "overall_quality": <score between 1 and 10>,
+  "feedback": "detailed feedback text"
+}}
+
+Generated Case:
+{json.dumps(generated_case)}
+"""
+        return self.get_json_answer(prompt)

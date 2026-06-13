@@ -1,10 +1,11 @@
 import os
 import sys
+import json
 
 # Ensure Python can find the api module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from api.ai_service import Prosecutor, DefenseAttorney, CaseArchitect
+from api.ai_service import Prosecutor, DefenseAttorney, CaseArchitect, AIEvaluator
 
 # Mock a simple case and transcript
 mock_case = {
@@ -19,14 +20,13 @@ mock_transcript = [
 ]
 
 print("=============================")
-print("🧪 TESTING PROSECUTOR AI")
+print("[TEST] TESTING PROSECUTOR AI")
 print("=============================")
 try:
     # Test Prosecutor with 'high' confidence
-    prosecutor= Prosecutor()
+    prosecutor = Prosecutor()
     prosecutor_reply = prosecutor.get_reply(mock_case, mock_transcript, confidence_level="high")
     print("\n[PROSECUTOR RESPONSE]:")
-    import json
     print(json.dumps(prosecutor_reply, indent=2))
     
     assert isinstance(prosecutor_reply, dict), "Prosecutor reply must be a JSON dictionary"
@@ -34,14 +34,32 @@ try:
     assert "reason" in prosecutor_reply, "Missing 'reason' key"
     assert "dialogue" in prosecutor_reply, "Missing 'dialogue' key"
     assert prosecutor_reply["action"] in ["statement", "objection"], "Action must be 'statement' or 'objection'"
-    print("✅ Prosecutor JSON structure is valid!")
+    print("[OK] Prosecutor JSON structure is valid!")
+    
+    evaluator = AIEvaluator()
+    print("\n[EVALUATING PROSECUTOR RESPONSE QUALITY...]")
+    prosecutor_evaluation = evaluator.evaluate_lawyer_reply(
+        case_json=mock_case,
+        spoken_statements=mock_transcript,
+        role="Prosecutor",
+        reply=prosecutor_reply
+    )
+    print("[PROSECUTOR EVALUATION]:")
+    print(json.dumps(prosecutor_evaluation, indent=2))
+    
+    assert isinstance(prosecutor_evaluation, dict), "Evaluation result must be a dictionary"
+    for key in ["role_adherence", "coherence", "relevance", "argument_quality", "overall_quality", "feedback"]:
+        assert key in prosecutor_evaluation, f"Missing key '{key}' in evaluation result"
+    
+    assert prosecutor_evaluation["overall_quality"] >= 7, f"Prosecutor overall quality too low: {prosecutor_evaluation['overall_quality']}/10. Feedback: {prosecutor_evaluation['feedback']}"
+    print("[OK] Prosecutor reply quality is high! (Overall Quality >= 7)")
 except Exception as e:
-    print(f"\n❌ Error running Prosecutor: {e}")
+    print(f"\n[ERROR] Error running Prosecutor: {e}")
     import traceback
     traceback.print_exc()
 
 print("\n\n=============================")
-print("🧪 TESTING DEFENSE AI")
+print("[TEST] TESTING DEFENSE AI")
 print("=============================")
 
 # Update transcript to simulate the trial moving forward
@@ -51,7 +69,7 @@ mock_transcript.append({
 })
 
 try:
-    defenceAgent=DefenseAttorney()
+    defenceAgent = DefenseAttorney()
     # Test Defense with 'normal' confidence responding to the prosecutor
     defense_reply = defenceAgent.get_reply(mock_case, mock_transcript, confidence_level="normal")
     print("\n[DEFENSE RESPONSE]:")
@@ -62,20 +80,38 @@ try:
     assert "reason" in defense_reply, "Missing 'reason' key"
     assert "dialogue" in defense_reply, "Missing 'dialogue' key"
     assert defense_reply["action"] in ["statement", "objection"], "Action must be 'statement' or 'objection'"
-    print("✅ Defense JSON structure is valid!")
+    print("[OK] Defense JSON structure is valid!")
+    
+    evaluator = AIEvaluator()
+    print("\n[EVALUATING DEFENSE RESPONSE QUALITY...]")
+    defense_evaluation = evaluator.evaluate_lawyer_reply(
+        case_json=mock_case,
+        spoken_statements=mock_transcript,
+        role="Defense Attorney",
+        reply=defense_reply
+    )
+    print("[DEFENSE EVALUATION]:")
+    print(json.dumps(defense_evaluation, indent=2))
+    
+    assert isinstance(defense_evaluation, dict), "Evaluation result must be a dictionary"
+    for key in ["role_adherence", "coherence", "relevance", "argument_quality", "overall_quality", "feedback"]:
+        assert key in defense_evaluation, f"Missing key '{key}' in evaluation result"
+        
+    assert defense_evaluation["overall_quality"] >= 7, f"Defense overall quality too low: {defense_evaluation['overall_quality']}/10. Feedback: {defense_evaluation['feedback']}"
+    print("[OK] Defense reply quality is high! (Overall Quality >= 7)")
 except Exception as e:
-    print(f"\n❌ Error running Defense: {e}")
+    print(f"\n[ERROR] Error running Defense: {e}")
     import traceback
     traceback.print_exc()
 
 print("\n\n=============================")
-print("🧪 TESTING CASE GENERATION")
+print("[TEST] TESTING CASE GENERATION")
 print("=============================")
 
 try:
     # Test case generation
-    caseArchitect=CaseArchitect()
-    generated_case =caseArchitect.generate_case()
+    caseArchitect = CaseArchitect()
+    generated_case = caseArchitect.generate_case()
     print("\n[GENERATED CASE]:")
     print(json.dumps(generated_case, indent=2))
     
@@ -106,8 +142,21 @@ try:
         assert "summary_statement" in witness, "Missing 'summary_statement' in witness"
         assert "hidden_truth" in witness, "Missing 'hidden_truth' in witness"
         
-    print("✅ Generated Case JSON structure is valid!")
+    print("[OK] Generated Case JSON structure is valid!")
+    
+    evaluator = AIEvaluator()
+    print("\n[EVALUATING CASE GENERATION QUALITY...]")
+    case_evaluation = evaluator.evaluate_case_generation(generated_case)
+    print("[CASE GENERATION EVALUATION]:")
+    print(json.dumps(case_evaluation, indent=2))
+    
+    assert isinstance(case_evaluation, dict), "Evaluation result must be a dictionary"
+    for key in ["scenario_coherence", "legal_playability", "completeness", "overall_quality", "feedback"]:
+        assert key in case_evaluation, f"Missing key '{key}' in evaluation result"
+        
+    assert case_evaluation["overall_quality"] >= 7, f"Case generation overall quality too low: {case_evaluation['overall_quality']}/10. Feedback: {case_evaluation['feedback']}"
+    print("[OK] Case generation quality is high! (Overall Quality >= 7)")
 except Exception as e:
-    print(f"\n❌ Error running Case Generation: {e}")
+    print(f"\n[ERROR] Error running Case Generation: {e}")
     import traceback
     traceback.print_exc()
