@@ -3,11 +3,18 @@ import { useLawyers } from '../store/lawyer-store/lawyerStore'
 
 let currentTimeouts: number[] = []
 let globalSpeechRate = 1.0
+let globalSpeechVolume = 1.0
 let assignedVoices: { prosecution: SpeechSynthesisVoice | null, defense: SpeechSynthesisVoice | null } | null = null
 let currentSessionId = 0
 
 export function setGlobalSpeechRate(rate: number) {
   globalSpeechRate = rate
+}
+
+/** Sets the TTS volume in [0, 1]. Applied to every utterance the next time it
+ *  is constructed; in-flight utterances are not affected (browser limitation). */
+export function setGlobalSpeechVolume(volume: number) {
+  globalSpeechVolume = Math.max(0, Math.min(1, volume))
 }
 
 export function resetVoices() {
@@ -162,6 +169,7 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
       if (voice) utterance.voice = voice
       utterance.pitch = Math.max(0, Math.min(2, item.pitch))
       utterance.rate = Math.max(0.1, Math.min(10, item.rate * globalSpeechRate))
+      utterance.volume = globalSpeechVolume
 
       utterance.onend = () => {
         playNext(index + 1)

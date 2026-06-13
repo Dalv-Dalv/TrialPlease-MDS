@@ -13,14 +13,16 @@ import { useFlow } from '../../../../store/flow-store/flowStore'
 import type { Side } from '../../../../store/flow-store/types'
 import { useLawyers } from '../../../../store/lawyer-store/lawyerStore'
 import { useCaseGenerator } from '../../../../store/case-generator-store/caseGeneratorContext'
+import { useAuth } from '../../../../store/authContext'
 import { HUD_STRINGS, phaseLabel } from '../../../../utils/strings'
-import { setGlobalSpeechRate } from '../../../../utils/speechSynthesis'
+import { setGlobalSpeechRate, setGlobalSpeechVolume } from '../../../../utils/speechSynthesis'
 import { TrialDebriefModal } from '../debrief-modal/TrialDebriefModal'
 import './TrialHUD.css'
 
 export function TrialHUD() {
   const [isCardOpen, setIsCardOpen] = useState(true)
   const [speechRate, setSpeechRateLocal] = useState(1.0)
+  const [speechVolume, setSpeechVolumeLocal] = useState(1.0)
   const phase = useFlow((s) => s.phase)
   const activeSpeaker = useFlow((s) => s.activeSpeaker)
   const currentEvidenceIndex = useFlow((s) => s.currentEvidenceIndex)
@@ -29,6 +31,7 @@ export function TrialHUD() {
   const transcript = useFlow((s) => s.transcript)
 
   const { caseInfo } = useCaseGenerator()
+  const { refreshUser } = useAuth()
   const defenseState = useLawyers((s) => s.defense)
   const prosecutionState = useLawyers((s) => s.prosecution)
 
@@ -62,7 +65,11 @@ export function TrialHUD() {
   const onSustain = () => useFlow.getState().approveObjection()
   const onOverrule = () => useFlow.getState().opposeObjection()
   const onVerdict = (choice: string) => {
-    void useFlow.getState().deliverVerdict(choice)
+    void useFlow
+      .getState()
+      .deliverVerdict(choice)
+      .then(() => refreshUser())
+      .catch(() => {})
   }
 
   const isAITurnPhase =
@@ -107,6 +114,12 @@ export function TrialHUD() {
     setGlobalSpeechRate(rate)
   }
 
+  const handleSpeechVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const volume = parseFloat(e.target.value)
+    setSpeechVolumeLocal(volume)
+    setGlobalSpeechVolume(volume)
+  }
+
   return (
     <div className="trial-hud" aria-live="polite">
       <div className="trial-hud-phase">
@@ -114,59 +127,6 @@ export function TrialHUD() {
       </div>
 
       <div className="trial-hud-stack">
-        {historyEntries.length > 0 && (
-          <div
-            className={`trial-hud-history ${isHistoryOpen ? '' : 'trial-hud-history--collapsed'}`}
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="trial-hud-history-header">
-              {!isHistoryOpen && (
-                <span className="trial-hud-history-title">{HUD_STRINGS.history.title}</span>
-              )}
-              <button
-                type="button"
-                className="trial-hud-toggle"
-                onClick={() => setIsHistoryOpen((open) => !open)}
-                aria-label={isHistoryOpen ? 'Collapse history' : 'Expand history'}
-                aria-expanded={isHistoryOpen}
-              >
-                {isHistoryOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-              </button>
-            </div>
-
-            {isHistoryOpen && (
-              <div className="trial-hud-history-list">
-                {historyEntries.map((item) => {
-                  if (item.side === 'system') {
-                    return (
-                      <div key={item.id} className="trial-hud-history-item trial-hud-history-item--system">
-                        <span 
-                          className="trial-hud-history-text"
-                          dangerouslySetInnerHTML={{ __html: item.text }}
-                        />
-                      </div>
-                    )
-                  }
-                  return (
-                    <div key={item.id} className={`trial-hud-history-item trial-hud-history-item--${item.side}`}>
-                      <span
-                        className={`trial-hud-history-tag trial-hud-history-tag--${item.side}`}
-                      >
-                        {HUD_STRINGS.speaker[item.side]}
-                      </span>
-                      <span 
-                        className="trial-hud-history-text"
-                        dangerouslySetInnerHTML={{ __html: item.text }}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
         <div
           className="trial-hud-card"
           onClick={(e) => e.stopPropagation()}
@@ -286,19 +246,36 @@ export function TrialHUD() {
             </div>
           )}
 
-          {/* Speech Rate Control */}
-          <div className="trial-hud-speech-rate">
-            <label htmlFor="speech-rate-slider">Speech Rate: {speechRate.toFixed(1)}x</label>
-            <input
-              id="speech-rate-slider"
-              type="range"
-              min="0.5"
-              max="2.5"
-              step="0.1"
-              value={speechRate}
-              onChange={handleSpeechRateChange}
-              className="trial-hud-slider"
-            />
+          {/* Speech Rate + Volume Controls */}
+          <div className="trial-hud-audio-row">
+            <div className="trial-hud-slider-control">
+              <label htmlFor="speech-rate-slider">Speech Rate: {speechRate.toFixed(1)}x</label>
+              <input
+                id="speech-rate-slider"
+                type="range"
+                min="0.5"
+                max="2.5"
+                step="0.1"
+                value={speechRate}
+                onChange={handleSpeechRateChange}
+                className="trial-hud-slider"
+              />
+            </div>
+            <div className="trial-hud-slider-control">
+              <label htmlFor="speech-volume-slider">
+                Volume: {Math.round(speechVolume * 100)}%
+              </label>
+              <input
+                id="speech-volume-slider"
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={speechVolume}
+                onChange={handleSpeechVolumeChange}
+                className="trial-hud-slider"
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Case, Choice, Evidence, EvidenceImage, Witness, UserCaseHistory
+from .models import Case, Choice, Evidence, EvidenceImage, Witness, UserCaseHistory, UserProfile
 
 # Înregistrarea simplă (cea mai rapidă variantă)
 # admin.site.register(Case)
@@ -48,3 +48,27 @@ class UserCaseHistoryAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'case__case_name', 'verdict_given')
     readonly_fields = ('created_at', 'updated_at')
     raw_id_fields = ('user', 'case')
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'total_xp', 'tier')
+    search_fields = ('user__username',)
+    raw_id_fields = ('user',)
+
+    def _xp_sum(self, obj):
+        from django.db.models import Sum
+        total = (
+            UserCaseHistory.objects
+            .filter(user=obj.user)
+            .aggregate(total=Sum('score'))['total']
+        )
+        return total or 0
+
+    def total_xp(self, obj):
+        return self._xp_sum(obj)
+    total_xp.short_description = 'XP (sum of scores)'
+
+    def tier(self, obj):
+        from .models import tier_for_xp
+        return tier_for_xp(self._xp_sum(obj))[1]
+    tier.short_description = 'Tier'

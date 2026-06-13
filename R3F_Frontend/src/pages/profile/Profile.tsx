@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../store/authContext'
+import { XpBar } from '../../components/xp-bar/XpBar'
 import { useProfile } from './useProfile'
 import type { TrialAction } from '../../store/flow-store/types'
 import type { CaseHistoryEntry } from './types'
@@ -17,6 +18,14 @@ function fmt(iso?: string | null) {
   })
 }
 
+/** The best possible score for a case is the highest score_points among its
+ *  possible_choices (typically the score for the correct verdict). */
+function maxScoreForCase(entry: CaseHistoryEntry): number {
+  const choices = entry.case?.possible_choices ?? []
+  if (choices.length === 0) return 0
+  return choices.reduce((max, c) => Math.max(max, c.score_points ?? 0), 0)
+}
+
 function VerdictBadge({ correct }: { correct: boolean | null }) {
   if (correct === null) return <span className="pf-badge pf-badge--unknown">Undecided</span>
   return correct
@@ -27,7 +36,8 @@ function VerdictBadge({ correct }: { correct: boolean | null }) {
 /* ── Case card ── */
 function CaseCard({ entry }: { entry: CaseHistoryEntry }) {
   const [open, setOpen] = useState(false)
-  const { case: c, verdict_given, is_correct, created_at } = entry
+  const { case: c, verdict_given, is_correct, created_at, score } = entry
+  const maxScore = maxScoreForCase(entry)
 
   return (
     <article className={`pf-case ${open ? 'pf-case--open' : ''}`}>
@@ -43,6 +53,13 @@ function CaseCard({ entry }: { entry: CaseHistoryEntry }) {
           <span className="pf-case-name">{c.case_name}</span>
         </div>
         <div className="pf-case-right">
+          {maxScore > 0 && (
+            <span className="pf-case-score" title="Score earned out of best possible">
+              <strong>{score ?? 0}</strong>
+              <span className="pf-case-score-sep">/</span>
+              {maxScore} <span className="pf-case-score-unit">pts</span>
+            </span>
+          )}
           <VerdictBadge correct={is_correct} />
           <span className="pf-case-date">{fmt(created_at)}</span>
           <span className="pf-case-chevron" aria-hidden>{open ? '▲' : '▼'}</span>
@@ -201,11 +218,15 @@ function CaseCard({ entry }: { entry: CaseHistoryEntry }) {
 export default function Profile() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isHome = location.pathname === '/'
   const profileState = useProfile()
 
   const history = profileState.status === 'ok' && profileState.data?.history ? profileState.data.history : []
   const wins = history.filter(h => h.is_correct === true).length
   const losses = history.filter(h => h.is_correct === false).length
+  const totalScore = history.reduce((sum, h) => sum + (h.score ?? 0), 0)
+  const totalMaxScore = history.reduce((sum, h) => sum + maxScoreForCase(h), 0)
 
   return (
     <div className="home-shell">
@@ -222,10 +243,20 @@ export default function Profile() {
           <span className="home-topbar-name">TrialSim</span>
         </button>
         <nav className="home-topbar-nav">
-          <span className="home-topbar-user">{user?.username}</span>
-          <button type="button" className="home-btn home-btn--ghost" onClick={() => navigate('/')}>
-            Home
+          <XpBar />
+          <button
+            type="button"
+            className="home-topbar-user home-topbar-user--link"
+            onClick={() => navigate('/profile')}
+            aria-label="Open profile"
+          >
+            {user?.username}
           </button>
+          {!isHome && (
+            <button type="button" className="home-btn home-btn--ghost" onClick={() => navigate('/')}>
+              Home
+            </button>
+          )}
           <button type="button" className="home-btn home-btn--ghost home-btn--danger" onClick={logout}>
             Sign out
           </button>
@@ -273,6 +304,18 @@ export default function Profile() {
               </span>
               <span className="pf-stat-label">Win Rate</span>
             </div>
+            {totalMaxScore > 0 && (
+              <>
+                <div className="pf-stat-divider" />
+                <div className="pf-stat">
+                  <span className="pf-stat-value">
+                    {totalScore}
+                    <span className="pf-stat-value-sub">/ {totalMaxScore}</span>
+                  </span>
+                  <span className="pf-stat-label">Score</span>
+                </div>
+              </>
+            )}
           </div>
         )}
 

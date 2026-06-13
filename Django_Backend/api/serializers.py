@@ -1,11 +1,46 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Case, Choice, Evidence, Witness, UserCaseHistory, EvidenceImage
+from django.db.models import Sum
+from .models import Case, Choice, Evidence, Witness, UserCaseHistory, EvidenceImage, tier_for_xp
+
+
+def _total_score_xp(user):
+    """XP is the sum of all UserCaseHistory.score rows for this user.
+
+    Memoized on the user instance so the four `get_xp_*` serializer methods
+    only trigger one DB aggregate per user per request.
+    """
+    if not hasattr(user, '_cached_total_xp'):
+        total = (
+            UserCaseHistory.objects
+            .filter(user=user)
+            .aggregate(total=Sum('score'))['total']
+        )
+        user._cached_total_xp = total or 0
+    return user._cached_total_xp
+
 
 class UserSerializer(serializers.ModelSerializer):
+    xp = serializers.SerializerMethodField()
+    xp_label = serializers.SerializerMethodField()
+    xp_current_tier_min = serializers.SerializerMethodField()
+    xp_next_tier_min = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email')
+        fields = ('id', 'username', 'email', 'xp', 'xp_label', 'xp_current_tier_min', 'xp_next_tier_min')
+
+    def get_xp(self, obj):
+        return _total_score_xp(obj)
+
+    def get_xp_label(self, obj):
+        return tier_for_xp(_total_score_xp(obj))[1]
+
+    def get_xp_current_tier_min(self, obj):
+        return tier_for_xp(_total_score_xp(obj))[0]
+
+    def get_xp_next_tier_min(self, obj):
+        return tier_for_xp(_total_score_xp(obj))[2]
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:

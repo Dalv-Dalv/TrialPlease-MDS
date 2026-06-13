@@ -151,6 +151,9 @@ class CaseViewSet(viewsets.ModelViewSet):
                 is_correct=verdict_correct,
                 score=score,
             )
+            # NOTE: total XP is now derived from the sum of all
+            # UserCaseHistory.score rows by UserSerializer — no separate
+            # XP write needed here.
 
         return Response({
             "absolute_truth": case.absolute_truth,
