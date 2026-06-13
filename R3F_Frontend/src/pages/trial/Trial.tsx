@@ -11,6 +11,7 @@ import { TrialHUD } from './components/trial-hud/TrialHUD'
 import { TrialLoadingScreen } from './components/TrialLoadingScreen'
 import './Trial.css'
 import { FlyCamera } from './components/FlyCamera'
+import { useFlow } from '../../store/flow-store/flowStore'
 
 function SceneReadyNotifier({ onReady }: { onReady: () => void }) {
   useEffect(() => {
@@ -34,6 +35,12 @@ export default function Trial() {
   const [isTabletOpen, setIsTabletOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [sceneReady, setSceneReady] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      useFlow.getState().reset()
+    }
+  }, [])
 
   return (
     <div className="trial-shell">

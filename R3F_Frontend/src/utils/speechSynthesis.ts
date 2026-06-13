@@ -12,6 +12,7 @@ export function setGlobalSpeechRate(rate: number) {
 
 export function resetVoices() {
   assignedVoices = null
+  stopSpeech()
 }
 
 export function stopSpeech() {
@@ -85,7 +86,7 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
   // A simplistic approach:
   // 1. Remove <speak> and </speak>
   let content = ssml.replace(/<\/?speak>/gi, '')
-  
+
   // 2. Split by tags to find breaks and prosody changes
   // Regex to match <tag> or </tag>
   const tagRegex = /(<[^>]+>)/g
@@ -100,7 +101,7 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
   for (const token of tokens) {
     if (token.startsWith('<')) {
       const lowerToken = token.toLowerCase()
-      
+
       if (lowerToken.startsWith('<break')) {
         const timeMatch = token.match(/time="(\d+)ms"/)
         if (timeMatch && timeMatch[1]) {
@@ -111,18 +112,18 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
       } else if (lowerToken.startsWith('<prosody')) {
         const pitchMatch = token.match(/pitch="([^"]+)"/i)
         const rateMatch = token.match(/rate="([^"]+)"/i)
-        
+
         if (pitchMatch) {
           const p = pitchMatch[1].toLowerCase()
           if (p === 'high') currentPitch = 1.5
           else if (p === 'low') currentPitch = 0.6
-          else if (p.endsWith('%')) currentPitch *= (1 + parseFloat(p)/100)
+          else if (p.endsWith('%')) currentPitch *= (1 + parseFloat(p) / 100)
         }
         if (rateMatch) {
           const r = rateMatch[1].toLowerCase()
           if (r === 'fast') currentRate = 1.3
           else if (r === 'slow') currentRate = 0.7
-          else if (r.endsWith('%')) currentRate *= (1 + parseFloat(r)/100)
+          else if (r.endsWith('%')) currentRate *= (1 + parseFloat(r) / 100)
         }
       } else if (lowerToken.startsWith('</prosody>')) {
         // Reset to base
@@ -161,7 +162,7 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
       if (voice) utterance.voice = voice
       utterance.pitch = Math.max(0, Math.min(2, item.pitch))
       utterance.rate = Math.max(0.1, Math.min(10, item.rate * globalSpeechRate))
-      
+
       utterance.onend = () => {
         playNext(index + 1)
       }
@@ -170,7 +171,7 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
         // Try to continue
         playNext(index + 1)
       }
-      
+
       window.speechSynthesis.speak(utterance)
     }
   }
@@ -185,27 +186,25 @@ export function playSSML(ssml: string, side: 'prosecution' | 'defense') {
  */
 export function formatSSMLForUI(ssml: string): string {
   let text = ssml.replace(/<\/?speak>/gi, '')
-  
+
   // Replace emphasis with bold HTML tag since we will use dangerouslySetInnerHTML
   text = text.replace(/<emphasis>/gi, '<b>')
   text = text.replace(/<\/emphasis>/gi, '</b>')
-  
+
   // Remove breaks without adding ellipsis (just a space so words don't stick together)
   text = text.replace(/<break[^>]*>/gi, ' ')
-  
+
   // Strip all other remaining XML/HTML tags except <b>
   // We use a regex that matches <something> unless it's <b> or </b>
   text = text.replace(/<\/?(?!(b|strong)\b)[^>]+>/gi, '')
-  
+
   // Replace newlines with <br/> for UI rendering
   text = text.replace(/\n/g, '<br/>')
-  
   // Remove repeating spaces
   text = text.replace(/ {2,}/g, ' ')
-  
   // Trim leading and trailing whitespace and <br/> tags that might have been left over from stripped XML tags
   text = text.replace(/^(?:\s|<br\/>)+/, '')
   text = text.replace(/(?:\s|<br\/>)+$/, '')
-  
+
   return text.trim()
 }

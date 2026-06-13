@@ -576,8 +576,10 @@ export const useFlow = create<FlowState>((set, get) => ({
   reset: () => {
     currentCase = null
     advanceInProgress = false
+    currentTurnId++
     resetMockLawyerAction()
     useLawyers.getState().reset()
+    resetVoices()
     const prevTick = get().gavelStrikeTick
     set({ ...initialState, gavelStrikeTick: prevTick })
   },
