@@ -91,6 +91,28 @@
   border-right: 1px solid rgba(212, 175, 55, 0.18);
 }
 
+.home-topbar-user--link {
+  background: none;
+  border: none;
+  border-right: 1px solid rgba(212, 175, 55, 0.18);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #d4af37;
+  opacity: 0.65;
+  padding: 0.25rem 0.625rem 0.25rem 0.5rem;
+  border-radius: 3px 0 0 3px;
+  transition: background 150ms, opacity 150ms, color 150ms;
+}
+
+.home-topbar-user--link:hover {
+  opacity: 1;
+  color: #f6e6a5;
+  background: rgba(212, 175, 55, 0.08);
+}
+
 /* ── Shared button base ───────────────────────────────────────────── */
 .home-btn {
   display: inline-flex;

@@ -411,6 +411,34 @@
   min-width: 155px;
 }
 
+.trial-hud-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(212, 175, 55, 0.22);
+  font-family: 'Cinzel', Georgia, serif;
+  color: #c4c0b4;
+}
+
+.trial-hud-slider-control {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  min-width: 0;
+}
+
+.trial-hud-slider-control label {
+  flex-shrink: 0;
+  min-width: 130px;
+  white-space: nowrap;
+}
+
 .trial-hud-slider {
   flex: 1;
   -webkit-appearance: none;

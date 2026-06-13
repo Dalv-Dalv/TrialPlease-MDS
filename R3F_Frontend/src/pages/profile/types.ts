@@ -49,6 +49,8 @@ export interface CaseHistoryEntry {
   transcript: TrialAction[]
   verdict_given: string | null
   is_correct: boolean | null
+  /** Score the user earned for the verdict they picked (from Choice.score_points). */
+  score: number
   created_at: string
   updated_at: string
 }

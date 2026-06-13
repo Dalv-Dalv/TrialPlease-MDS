@@ -1,0 +1,44 @@
+.xp-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.25rem 0.75rem 0.25rem 0.5rem;
+  border-right: 1px solid rgba(212, 175, 55, 0.18);
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #d4af37;
+}
+
+.xp-bar-label {
+  white-space: nowrap;
+  opacity: 0.85;
+  font-weight: 600;
+  color: #f6e6a5;
+}
+
+.xp-bar-track {
+  position: relative;
+  width: 110px;
+  height: 6px;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.5), #d4af37);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.45);
+  transition: width 350ms ease-out;
+}
+
+.xp-bar-progress {
+  font-size: 0.55rem;
+  opacity: 0.65;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+}

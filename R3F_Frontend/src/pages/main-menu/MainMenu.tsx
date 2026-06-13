@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../store/authContext'
+import { XpBar } from '../../components/xp-bar/XpBar'
 import './MainMenu.css'
 
 export default function MainMenu() {
@@ -21,9 +22,14 @@ export default function MainMenu() {
           <span className="home-topbar-name">TrialSim</span>
         </button>
         <nav className="home-topbar-nav">
-          <span className="home-topbar-user">{user?.username}</span>
-          <button type="button" className="home-btn home-btn--ghost" onClick={() => navigate('/profile')}>
-            Profile
+          <XpBar />
+          <button
+            type="button"
+            className="home-topbar-user home-topbar-user--link"
+            onClick={() => navigate('/profile')}
+            aria-label="Open profile"
+          >
+            {user?.username}
           </button>
           <button type="button" className="home-btn home-btn--ghost home-btn--danger" onClick={logout}>
             Sign out
