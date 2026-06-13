@@ -336,7 +336,7 @@ export const useFlow = create<FlowState>((set, get) => ({
           
           if (msg) {
             set((s) => ({
-              // @ts-ignore Side | 'system' is fine here
+              // @ts-expect-error Side | 'system' is fine here
               recentSpeech: [...s.recentSpeech, { id: newId(), side: 'system', text: msg }].slice(-RECENT_SPEECH_MAX)
             }))
           }
