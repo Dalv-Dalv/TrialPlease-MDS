@@ -5,10 +5,10 @@ import { CaseGeneratorProvider } from './store/case-generator-store/caseGenerato
 import { RequireAuth, RedirectIfAuthed } from './router/guards'
 
 // Lazy-load pages so the heavy 3-D bundle doesn't block the auth screens
-const Login    = lazy(() => import('./pages/auth/login/Login'))
+const Login = lazy(() => import('./pages/auth/login/Login'))
 const Register = lazy(() => import('./pages/auth/register/Register'))
 const MainMenu = lazy(() => import('./pages/main-menu/MainMenu'))
-const Trial    = lazy(() => import('./pages/trial/Trial'))
+const Trial = lazy(() => import('./pages/trial/Trial'))
 
 export default function App() {
   return (
@@ -16,7 +16,7 @@ export default function App() {
       <Routes>
         {/* ── Public auth routes (redirect away if already logged in) ── */}
         <Route element={<RedirectIfAuthed />}>
-          <Route path="/auth/login"    element={<Suspense fallback={null}><Login /></Suspense>} />
+          <Route path="/auth/login" element={<Suspense fallback={null}><Login /></Suspense>} />
           <Route path="/auth/register" element={<Suspense fallback={null}><Register /></Suspense>} />
         </Route>
 
