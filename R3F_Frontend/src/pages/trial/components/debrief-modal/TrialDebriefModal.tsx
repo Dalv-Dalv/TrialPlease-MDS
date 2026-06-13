@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom'
 import { useFlow } from '../../../../store/flow-store/flowStore'
 import './TrialDebriefModal.css'
 
 export function TrialDebriefModal() {
+  const navigate = useNavigate()
   const debrief = useFlow((s) => s.debrief)
   
   if (!debrief) return null
@@ -34,6 +36,13 @@ export function TrialDebriefModal() {
         </div>
 
         <div className="trial-debrief-actions">
+          <button 
+            type="button" 
+            className="trial-debrief-btn trial-debrief-btn--ghost" 
+            onClick={() => navigate('/')}
+          >
+            Back to Home
+          </button>
           <button 
             type="button" 
             className="trial-debrief-btn" 
