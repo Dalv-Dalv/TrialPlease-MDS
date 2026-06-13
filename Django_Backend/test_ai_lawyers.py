@@ -4,7 +4,7 @@ import sys
 # Ensure Python can find the api module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from api.ai_service import getAgentAcuserReply, getAgentDefendentReply, generateCase
+from api.ai_service import Prosecutor, DefenseAttorney, CaseArchitect
 
 # Mock a simple case and transcript
 mock_case = {
@@ -23,7 +23,8 @@ print("🧪 TESTING PROSECUTOR AI")
 print("=============================")
 try:
     # Test Prosecutor with 'high' confidence
-    prosecutor_reply = getAgentAcuserReply(mock_case, mock_transcript, confidence_level="high")
+    prosecutor= Prosecutor()
+    prosecutor_reply = prosecutor.get_reply(mock_case, mock_transcript, confidence_level="high")
     print("\n[PROSECUTOR RESPONSE]:")
     import json
     print(json.dumps(prosecutor_reply, indent=2))
@@ -50,8 +51,9 @@ mock_transcript.append({
 })
 
 try:
+    defenceAgent=DefenseAttorney()
     # Test Defense with 'normal' confidence responding to the prosecutor
-    defense_reply = getAgentDefendentReply(mock_case, mock_transcript, confidence_level="normal")
+    defense_reply = defenceAgent.get_reply(mock_case, mock_transcript, confidence_level="normal")
     print("\n[DEFENSE RESPONSE]:")
     print(json.dumps(defense_reply, indent=2))
     
@@ -72,7 +74,8 @@ print("=============================")
 
 try:
     # Test case generation
-    generated_case = generateCase()
+    caseArchitect=CaseArchitect()
+    generated_case =caseArchitect.generate_case()
     print("\n[GENERATED CASE]:")
     print(json.dumps(generated_case, indent=2))
     
