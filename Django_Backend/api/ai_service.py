@@ -126,10 +126,11 @@ The JSON structure MUST be exactly the following:
   "absolute_truth": "The hidden, absolute reality of what happened. Keep it secret from the player.",
   "defendant": "NAME: brief description of the accused person",
   "victim": "NAME: brief description of the victim/plaintiff",
-  "correct_verdict": "what is the correct verdict based on the absolute truth, must be one of the possible choices, Verdict must be '''f"{random.choice(['Guilty', 'Not Guilty'])}"'''",
+  "correct_verdict": "what is the correct verdict based on the absolute truth, must be one of the possible choices, Verdict must be a '''f"{random.choice(['Guilty of 1 st degree murder', 'Guilty of Negligence', 'Not Guilty'])} "'''verdict",
   "possible_choices": [
-     {"verdict_option": "Verdict Option 1", "score_points": 100},
-     {"verdict_option": "Verdict Option 2", "score_points": 50}
+     {"verdict_option": "Guilty of 1 st degree murder", "score_points": 100},
+     {"verdict_option": "Guilty of Negligence", "score_points": 50},
+     {"verdict_option": "Not Guilty", "score_points": 10},
   ],
   "evidence_items": [
     {"name": "Evidence 1", "description": "Description", "image": "image_filename_from_catalog.png"}
@@ -142,7 +143,10 @@ The JSON structure MUST be exactly the following:
       "hidden_truth": "What they actually know but are hiding or misrepresenting."
     }
   ]
-}    
+}  
+The points should be between 10 and 100, there shoud be multiple possible_choices,
+the correct_verdict must match one of the verdict_option in the possible_choices list,
+the correct_verdict must be the one with the highest score points
 '''
     return self.get_json_answer(prompt)
 
