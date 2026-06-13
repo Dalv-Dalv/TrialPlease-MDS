@@ -73,7 +73,7 @@ export default function Trial() {
           />
         </Suspense>
 
-        <PointerLockControls makeDefault enabled={!isTabletOpen && !isLoading} />
+        <PointerLockControls makeDefault enabled={!isTabletOpen && !isLoading && !menuOpen} />
         {/* <FlyCamera /> */}
 
         <EffectComposer>
@@ -88,7 +88,11 @@ export default function Trial() {
           <button
             type="button"
             className="trial-menu-trigger"
-            onClick={() => setMenuOpen(true)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setMenuOpen(true)
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
             aria-label="Open menu"
           >
             <Menu size={18} />
