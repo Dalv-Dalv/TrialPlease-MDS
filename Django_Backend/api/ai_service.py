@@ -126,7 +126,7 @@ The JSON structure MUST be exactly the following:
   "absolute_truth": "The hidden, absolute reality of what happened. Keep it secret from the player.",
   "defendant": "NAME: brief description of the accused person",
   "victim": "NAME: brief description of the victim/plaintiff",
-  "correct_verdict": "what is the correct verdict based on the absolute truth, must be one of the possible choices",
+  "correct_verdict": "what is the correct verdict based on the absolute truth, must be one of the possible choices, Verdict must be '''f"{random.choice(['Guilty', 'Not Guilty'])}"'''",
   "possible_choices": [
      {"verdict_option": "Verdict Option 1", "score_points": 100},
      {"verdict_option": "Verdict Option 2", "score_points": 50}
@@ -192,10 +192,16 @@ The JSON structure must be as follows:
 {{
   "action": "statement" or "objection",
   "reason": "If objection, provide reason like 'hearsay', 'leading', 'speculation', etc. Otherwise null.",
-  "dialogue": "Your statement or the dialogue for your objection."
+  "dialogue": "Your statement or the dialogue for your objection, wrapped in <speak> tags."
 }}
 
 Your dialogue reply must not exceed 500 characters. Make sure to space out your paragraphs on new lines if you have multiple.
+Crucially, you MUST use SSML tags to convey your emotion, confidence, and pacing. 
+Wrap the entire text in <speak>...</speak>. 
+Use <break time="Xms"/> for dramatic pauses. Break times must NOT exceed 100ms in the middle of sentences, and can be up to 200ms between sentences. Do NOT place a break after every comma; commas already add a natural pause, so only use breaks after commas if absolutely necessary for extreme dramatic effect.
+Do NOT use literal ellipsis ("...") just because you added a break tag. Keep the text punctuation clean.
+Use <prosody pitch="high/low" rate="fast/slow">...</prosody> for tonal shifts.
+Use <emphasis>...</emphasis> to stress important words, but use it SPARINGLY (only 1 or 2 words per reply). Do NOT use asterisks (*) or any other symbol for emphasis.
 
 If the last event in the transcript is an 'objection_ruling', pay close attention:
 - If YOUR objection was 'sustained', you won. The opponent's last statement is stricken. You should confidently continue your point.

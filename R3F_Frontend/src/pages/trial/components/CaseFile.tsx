@@ -333,6 +333,23 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
                                             <p style={styles.paragraph}>{currentEvidence.description}</p>
                                         </div>
 
+                                        {currentEvidence.images && currentEvidence.images.length > 0 && (
+                                            <div className="section-reveal" style={styles.section}>
+                                                <div style={styles.sectionHeader}>
+                                                    <span style={styles.sectionRoman}>§</span>
+                                                    <h3 style={styles.sectionTitle}>EXHIBIT IMAGE</h3>
+                                                </div>
+                                                <div style={styles.sectionRule} />
+                                                <div style={styles.imageWrapper}>
+                                                    <img 
+                                                        src={currentEvidence.images[0].image_url} 
+                                                        alt={currentEvidence.images[0].caption || currentEvidence.name} 
+                                                        style={styles.evidenceImage} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
                                         {evidenceArguments.length > 0 && (
                                             <div className="section-reveal" style={styles.section}>
                                                 <div style={styles.sectionHeader}>
@@ -741,6 +758,18 @@ const styles: { [key: string]: React.CSSProperties } = {
         textAlign: 'justify',
         color: TEXT_BODY,
         fontWeight: 300,
+    },
+    imageWrapper: {
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '10px 0',
+    },
+    evidenceImage: {
+        maxWidth: '100%',
+        maxHeight: '400px',
+        objectFit: 'contain',
+        borderRadius: '4px',
+        border: `1px solid ${GOLD_DIM}`,
     },
 
     // FOOTER

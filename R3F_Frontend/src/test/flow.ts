@@ -110,25 +110,25 @@ export const MOCK_OBJECTION_TRIGGERS: Array<{
   triggerSubstring: string
   reason: ObjectionReason
 }> = [
-  {
-    by: 'defense',
-    appliesTo: ['evidence_argument'],
-    triggerSubstring: 'an interaction no passerby would have',
-    reason: 'speculation',
-  },
-  {
-    by: 'prosecution',
-    appliesTo: ['evidence_argument'],
-    triggerSubstring: 'rumor in digital form',
-    reason: 'argumentative',
-  },
-  {
-    by: 'prosecution',
-    appliesTo: ['evidence_argument'],
-    triggerSubstring: 'librarian',
-    reason: 'relevance',
-  },
-]
+    {
+      by: 'defense',
+      appliesTo: ['evidence_argument'],
+      triggerSubstring: 'an interaction no passerby would have',
+      reason: 'speculation',
+    },
+    {
+      by: 'prosecution',
+      appliesTo: ['evidence_argument'],
+      triggerSubstring: 'rumor in digital form',
+      reason: 'argumentative',
+    },
+    {
+      by: 'prosecution',
+      appliesTo: ['evidence_argument'],
+      triggerSubstring: 'librarian',
+      reason: 'relevance',
+    },
+  ]
 
 export const MOCK_RULING_RESPONSES: Record<'sustained' | 'overruled', Record<Side, string | null>> = {
   sustained: {
@@ -141,9 +141,9 @@ export const MOCK_RULING_RESPONSES: Record<'sustained' | 'overruled', Record<Sid
   },
 }
 
-export const MOCK_PERSONAS: Record<Side, { name: string; style: string }> = {
-  prosecution: { name: 'Prosecutor Halloran', style: 'precise, relentless, plainspoken' },
-  defense: { name: 'Counsel Voss', style: 'measured, sympathetic, methodical' },
+export const MOCK_PERSONAS: Record<Side, { name: string; style: string; gender: 'male' | 'female' }> = {
+  prosecution: { name: 'Prosecutor Halloran', style: 'precise, relentless, plainspoken', gender: 'male' },
+  defense: { name: 'Counsel Voss', style: 'measured, sympathetic, methodical', gender: 'male' },
 }
 
 /**

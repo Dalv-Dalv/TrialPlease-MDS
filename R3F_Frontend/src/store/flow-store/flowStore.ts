@@ -14,6 +14,7 @@ import type {
 } from './types'
 // TODO: replace mock imports with real backend calls once the AI service is ready.
 import { mockLawyerAction, resetMockLawyerAction } from '../../test/flow'
+import { playSSML, stopSpeech, formatSSMLForUI, resetVoices } from '../../utils/speechSynthesis'
 
 const initialState = {
   phase: 'pre_trial' as Phase,
@@ -162,6 +163,7 @@ async function fetchDebrief(caseId: number, verdict: string, transcript: TrialAc
 /** Set the lawyer side into "thinking" — clears prior utterance so the HUD
  *  shows "..." immediately instead of the previous speech. */
 function beginThinking(side: Side) {
+  stopSpeech() // Stop any current speech when thinking starts
   useLawyers.getState().setUtterance(side, null)
   useLawyers.getState().setThinking(side, true)
 }
@@ -169,18 +171,21 @@ function beginThinking(side: Side) {
 /** Display a freshly-spoken utterance in the lawyer's bubble without recording
  *  it in the HUD's history buffer. Used for evidence_argument turns since
  *  those live in the CaseFile evidence page, not in the HUD history. */
-function displaySpeech(side: Side, text: string) {
+function displaySpeech(side: Side, rawText: string) {
+  const uiText = formatSSMLForUI(rawText)
   useLawyers.getState().setThinking(side, false)
-  useLawyers.getState().setUtterance(side, text)
+  useLawyers.getState().setUtterance(side, uiText)
+  playSSML(rawText, side)
 }
 
 /** Commit a freshly-spoken utterance: display it AND push to the recent-speech
  *  ring buffer so it appears in the HUD history. Used for openings/closings. */
-function commitSpeech(side: Side, text: string) {
+function commitSpeech(side: Side, rawText: string) {
   const id = newId()
-  displaySpeech(side, text)
+  const uiText = formatSSMLForUI(rawText)
+  displaySpeech(side, rawText)
   useFlow.setState((s) => ({
-    recentSpeech: [...s.recentSpeech, { id, side, text }].slice(-RECENT_SPEECH_MAX),
+    recentSpeech: [...s.recentSpeech, { id, side, text: uiText }].slice(-RECENT_SPEECH_MAX),
   }))
 }
 
@@ -304,6 +309,7 @@ export const useFlow = create<FlowState>((set, get) => ({
     advanceInProgress = false
     resetMockLawyerAction()
     useLawyers.getState().reset()
+    resetVoices()
     const prevTick = get().gavelStrikeTick
     set({
       ...initialState,
@@ -432,13 +438,14 @@ export const useFlow = create<FlowState>((set, get) => ({
       }
 
       // ── Append action (Phase/Speaker transition deferred to next turn) ──
+      const strippedText = text ? formatSSMLForUI(text) : ''
       if (currentFlow.phase === 'opening_prosecution' || currentFlow.phase === 'opening_defense') {
         get().appendAction({
           id: newId(),
           ts: Date.now(),
           kind: 'opening_statement',
           side: speaker,
-          text,
+          text: strippedText,
         })
         if (!text) setTimeout(() => get().advanceTurn(), 0)
       } else if (currentFlow.phase === 'closing_prosecution' || currentFlow.phase === 'closing_defense') {
@@ -447,7 +454,7 @@ export const useFlow = create<FlowState>((set, get) => ({
           ts: Date.now(),
           kind: 'closing_statement',
           side: speaker,
-          text,
+          text: strippedText,
         })
         if (!text) setTimeout(() => get().advanceTurn(), 0)
       } else if (currentFlow.phase === 'evidence_debate' && evidenceName) {
@@ -461,7 +468,7 @@ export const useFlow = create<FlowState>((set, get) => ({
             kind: 'evidence_argument',
             side: speaker,
             evidenceName,
-            text,
+            text: strippedText,
           })
           // New material on the table — opponent gets a fresh chance to rebut.
           set((s) => ({
@@ -573,8 +580,10 @@ export const useFlow = create<FlowState>((set, get) => ({
   reset: () => {
     currentCase = null
     advanceInProgress = false
+    currentTurnId++
     resetMockLawyerAction()
     useLawyers.getState().reset()
+    resetVoices()
     const prevTick = get().gavelStrikeTick
     set({ ...initialState, gavelStrikeTick: prevTick })
   },
