@@ -29,6 +29,7 @@ const initialState = {
   debrief: null as DebriefResult | null,
   recentSpeech: [] as { id: string; side: Side | 'system'; text: string }[],
   prefetch: null,
+  gavelStrikeTick: 0,
 }
 
 const RECENT_SPEECH_MAX = 8
@@ -113,8 +114,6 @@ async function fetchLawyerAction(
         phase,
         evidence_name: currentEvidenceName,
         transcript,
-        phase,
-        evidence_name: currentEvidenceName,
       }),
     })
     if (!res.ok) throw new Error(`lawyer_action ${res.status}`)
@@ -125,13 +124,17 @@ async function fetchLawyerAction(
   }
 }
 
-async function fetchDebrief(caseId: number, verdict: string): Promise<DebriefResult> {
+async function fetchDebrief(caseId: number, verdict: string, transcript: TrialAction[]): Promise<DebriefResult> {
   try {
     if (!caseId) throw new Error('missing caseId')
+    const token = (() => { try { const raw = localStorage.getItem('auth.user'); return raw ? JSON.parse(raw).token : null; } catch { return null; } })();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Token ${token}`;
+
     const res = await fetch(`/api/cases/${caseId}/debrief/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ verdict }),
+      headers,
+      body: JSON.stringify({ verdict, transcript }),
     })
     if (!res.ok) throw new Error(`debrief ${res.status}`)
     const raw = await res.json()
@@ -161,17 +164,25 @@ function beginThinking(side: Side) {
   useLawyers.getState().setThinking(side, true)
 }
 
-/** Commit a freshly-spoken utterance: clear thinking, store text, push to
- *  the recent-speech ring buffer for the HUD. */
-function commitSpeech(side: Side, rawText: string) {
-  const id = newId()
+/** Display a freshly-spoken utterance in the lawyer's bubble without recording
+ *  it in the HUD's history buffer. Used for evidence_argument turns since
+ *  those live in the CaseFile evidence page, not in the HUD history. */
+function displaySpeech(side: Side, rawText: string) {
   const uiText = formatSSMLForUI(rawText)
   useLawyers.getState().setThinking(side, false)
   useLawyers.getState().setUtterance(side, uiText)
+  playSSML(rawText, side)
+}
+
+/** Commit a freshly-spoken utterance: display it AND push to the recent-speech
+ *  ring buffer so it appears in the HUD history. Used for openings/closings. */
+function commitSpeech(side: Side, rawText: string) {
+  const id = newId()
+  const uiText = formatSSMLForUI(rawText)
+  displaySpeech(side, rawText)
   useFlow.setState((s) => ({
     recentSpeech: [...s.recentSpeech, { id, side, text: uiText }].slice(-RECENT_SPEECH_MAX),
   }))
-  playSSML(rawText, side)
 }
 
 /** Clear the thinking flag without committing speech (used on objections). */
@@ -253,7 +264,7 @@ function computeNextState(flow: FlowState, totalEvidenceItems: number): Partial<
     } else if (next === 'closing_defense') patch.activeSpeaker = 'defense'
     else if (next === 'verdict') {
       patch.activeSpeaker = 'judge'
-      patch.awaitingUser = 'verdict'
+      patch.awaitingUser = 'final_gavel'
     } else if (next === 'concluded') patch.activeSpeaker = null
 
   } else if (flow.phase === 'evidence_debate') {
@@ -295,11 +306,13 @@ export const useFlow = create<FlowState>((set, get) => ({
     resetMockLawyerAction()
     useLawyers.getState().reset()
     resetVoices()
+    const prevTick = get().gavelStrikeTick
     set({
       ...initialState,
       caseId: caseInfo.id,
       phase: 'opening_prosecution',
       activeSpeaker: 'prosecution',
+      gavelStrikeTick: prevTick + 1,
       recentSpeech: [{ id: newId(), side: 'system', text: 'PROSECUTION OPENING STATEMENT' }],
     })
     setTimeout(() => get().advanceTurn(), 0)
@@ -341,8 +354,8 @@ export const useFlow = create<FlowState>((set, get) => ({
           
           if (msg) {
             set((s) => ({
-              // @ts-ignore Side | 'system' is fine here
-              recentSpeech: [...s.recentSpeech, { id: newId(), side: 'system', text: msg }]
+              // @ts-expect-error Side | 'system' is fine here
+              recentSpeech: [...s.recentSpeech, { id: newId(), side: 'system', text: msg }].slice(-RECENT_SPEECH_MAX)
             }))
           }
         }
@@ -411,8 +424,14 @@ export const useFlow = create<FlowState>((set, get) => ({
       }
 
       const text = response.text ?? ''
-      if (text) commitSpeech(speaker, text)
-      else endThinking(speaker)
+      if (text) {
+        // Evidence arguments belong to the CaseFile evidence page — display
+        // the live bubble but skip the HUD history buffer.
+        if (currentFlow.phase === 'evidence_debate') displaySpeech(speaker, text)
+        else commitSpeech(speaker, text)
+      } else {
+        endThinking(speaker)
+      }
 
       // ── Append action (Phase/Speaker transition deferred to next turn) ──
       const strippedText = text ? formatSSMLForUI(text) : ''
@@ -424,6 +443,7 @@ export const useFlow = create<FlowState>((set, get) => ({
           side: speaker,
           text: strippedText,
         })
+        if (!text) setTimeout(() => get().advanceTurn(), 0)
       } else if (currentFlow.phase === 'closing_prosecution' || currentFlow.phase === 'closing_defense') {
         get().appendAction({
           id: newId(),
@@ -432,9 +452,11 @@ export const useFlow = create<FlowState>((set, get) => ({
           side: speaker,
           text: strippedText,
         })
+        if (!text) setTimeout(() => get().advanceTurn(), 0)
       } else if (currentFlow.phase === 'evidence_debate' && evidenceName) {
         if (!text) {
           get().passEvidence(speaker, evidenceName)
+          setTimeout(() => get().advanceTurn(), 0)
         } else {
           get().appendAction({
             id: newId(),
@@ -484,8 +506,14 @@ export const useFlow = create<FlowState>((set, get) => ({
       ruling: 'sustained',
       objectionId: pending.actionId,
     }
+    const historyEntry = {
+      id: newId(),
+      side: 'system' as const,
+      text: `OBJECTION SUSTAINED — called by ${pending.side === 'prosecution' ? 'Prosecution' : 'Defense'} (${pending.reason})`,
+    }
     set((s) => ({
       transcript: [...s.transcript, ruling],
+      recentSpeech: [...s.recentSpeech, historyEntry].slice(-RECENT_SPEECH_MAX),
       pendingObjection: null,
       awaitingUser: null,
     }))
@@ -501,11 +529,29 @@ export const useFlow = create<FlowState>((set, get) => ({
       ruling: 'overruled',
       objectionId: pending.actionId,
     }
+    const historyEntry = {
+      id: newId(),
+      side: 'system' as const,
+      text: `OBJECTION OVERRULED — called by ${pending.side === 'prosecution' ? 'Prosecution' : 'Defense'} (${pending.reason})`,
+    }
     set((s) => ({
       transcript: [...s.transcript, ruling],
+      recentSpeech: [...s.recentSpeech, historyEntry].slice(-RECENT_SPEECH_MAX),
       pendingObjection: null,
       awaitingUser: null,
     }))
+  },
+
+  /** Called when the user strikes the gavel during the final-gavel prompt.
+   *  Bumps the strike tick (the Gavel watches it and animates) and reveals
+   *  the verdict choices by flipping awaitingUser to 'verdict'. */
+  confirmVerdictGavel: () => {
+    const flow = get()
+    if (flow.awaitingUser !== 'final_gavel') return
+    set({
+      awaitingUser: 'verdict',
+      gavelStrikeTick: flow.gavelStrikeTick + 1,
+    })
   },
 
   deliverVerdict: async (verdict) => {
@@ -522,7 +568,7 @@ export const useFlow = create<FlowState>((set, get) => ({
       phase: 'concluded',
       activeSpeaker: null,
     }))
-    const result = await fetchDebrief(caseId, verdict)
+    const result = await fetchDebrief(caseId, verdict, get().transcript)
     set({ debrief: result })
     return result
   },
@@ -532,7 +578,8 @@ export const useFlow = create<FlowState>((set, get) => ({
     advanceInProgress = false
     resetMockLawyerAction()
     useLawyers.getState().reset()
-    set({ ...initialState })
+    const prevTick = get().gavelStrikeTick
+    set({ ...initialState, gavelStrikeTick: prevTick })
   },
 
   // === Internal mutations =====================================================
@@ -556,7 +603,7 @@ export const useFlow = create<FlowState>((set, get) => ({
     } else if (next === 'closing_defense') patch.activeSpeaker = 'defense'
     else if (next === 'verdict') {
       patch.activeSpeaker = 'judge'
-      patch.awaitingUser = 'verdict'
+      patch.awaitingUser = 'final_gavel'
     } else if (next === 'concluded') patch.activeSpeaker = null
 
     set(patch)

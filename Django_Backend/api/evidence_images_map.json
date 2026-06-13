@@ -1,0 +1,248 @@
+{
+    "digital_device": [
+        {
+            "filename": "digital_device_1.png",
+            "description": "A modern smartphone with a severely smashed and cracked screen lying on a surface."
+        },
+        {
+            "filename": "digital_device_2.png",
+            "description": "A silver laptop slightly open next to an external black hard drive connected via USB, along with a silver USB flash drive."
+        }
+    ],
+    "digital_logs": [
+        {
+            "filename": "digital_logs_1.png",
+            "description": "A computer monitor displaying a Linux terminal screen with various system log files listed, showing text in different colors."
+        },
+        {
+            "filename": "digital_logs_2.png",
+            "description": "A digital GPS tracking map interface showing a route plotted with a blue line, starting from a purple pin to a cyan pin."
+        }
+    ],
+    "doc_communication": [
+        {
+            "filename": "doc_communication_1.png",
+            "description": "A ransom letter made of cut-out magazine letters spelling 'RaNSOM LetteR!' along with the full alphabet and numbers."
+        }
+    ],
+    "doc_contract": [
+        {
+            "filename": "doc_contract_1.png",
+            "description": "An illustration of hands signing a Legal Document clipboard with a pen."
+        },
+        {
+            "filename": "doc_contract_2.png",
+            "description": "Close up of a printed Non-Disclosure Agreement (NDA) document."
+        },
+        {
+            "filename": "doc_contract_3.png",
+            "description": "Close up of a printed Last Will and Testament document."
+        },
+        {
+            "filename": "doc_contract_4.png",
+            "description": "Close up of a printed Life Insurance Application form."
+        }
+    ],
+    "doc_financial": [
+        {
+            "filename": "doc_financial_1.png",
+            "description": "A printed bank statement showing transaction history and balance."
+        },
+        {
+            "filename": "doc_financial_2.png",
+            "description": "A blank bank check ready to be filled out."
+        }
+    ],
+    "doc_official": [
+        {
+            "filename": "doc_official_1.png",
+            "description": "Close up of a formal Police Report document."
+        },
+        {
+            "filename": "doc_official_2.png",
+            "description": "A dark blue official passport."
+        }
+    ],
+    "doc_personal": [
+        {
+            "filename": "doc_personal_1.png",
+            "description": "A handwritten love letter on aged paper starting with 'The rose, which in sun's warm...'."
+        },
+        {
+            "filename": "doc_personal_2.png",
+            "description": "A patient medical card inside an open manila folder."
+        }
+    ],
+    "forensic_blood": [
+        {
+            "filename": "forensic_blood_1.png",
+            "description": "Multiple drops of fresh red blood splattered on a light-colored surface."
+        },
+        {
+            "filename": "forensic_blood_2.png",
+            "description": "A forensic swab tip saturated with red blood."
+        },
+        {
+            "filename": "forensic_blood_3.png",
+            "description": "Two medical test tubes, one containing yellow liquid and the other containing red blood, resting on a lab report."
+        }
+    ],
+    "forensic_chemical": [
+        {
+            "filename": "forensic_chemical_1.png",
+            "description": "A clear plastic zip-lock baggie containing white powder, resembling illicit drugs."
+        },
+        {
+            "filename": "forensic_chemical_2.png",
+            "description": "An overturned orange prescription pill bottle spilling blue and white capsules onto a white surface."
+        }
+    ],
+    "forensic_medical": [
+        {
+            "filename": "forensic_medical_1.png",
+            "description": "A blue-tinted medical X-ray showing the human skeletal structure of a torso and head."
+        }
+    ],
+    "forensic_trace": [
+        {
+            "filename": "forensic_trace_1.png",
+            "description": "Spent brass bullet casings scattered on an asphalt street with a city skyline in the blurred background."
+        },
+        {
+            "filename": "forensic_trace_2.png",
+            "description": "A close-up of a forensic fingerprint brush dusting for prints on a glass surface."
+        },
+        {
+            "filename": "forensic_trace_3.png",
+            "description": "A clear shoe footprint impression in reddish dirt next to a yellow crime scene marker numbered 2."
+        },
+        {
+            "filename": "forensic_trace_4.png",
+            "description": "Dark black tire skid marks on an asphalt road curving to the left."
+        }
+    ],
+    "generic_document": [
+        {
+            "filename": "generic_document_1.png",
+            "description": "A stack of manila folders with the top one stamped 'CONFIDENTIAL' in red ink."
+        }
+    ],
+    "generic_evidence": [
+        {
+            "filename": "generic_evidence_1.png",
+            "description": "Shattered glass with multiple bullet hole spiderwebs, crossed by yellow crime scene tape."
+        },
+        {
+            "filename": "generic_evidence_2.png",
+            "description": "A clear plastic evidence bag with a chain of custody label on it."
+        }
+    ],
+    "item_clothing": [
+        {
+            "filename": "item_clothing_1.png",
+            "description": "Close-up of worn, dark denim jeans with large torn holes."
+        },
+        {
+            "filename": "item_clothing_2.png",
+            "description": "A pair of dirty, mud-covered rubber boots standing next to leather hiking boots."
+        }
+    ],
+    "item_everyday": [
+        {
+            "filename": "item_everyday_1.png",
+            "description": "A brown leather wallet dropped and left open on a concrete sidewalk, with some cash visible inside."
+        }
+    ],
+    "item_valuable": [
+        {
+            "filename": "item_valuable_1.png",
+            "description": "A collection of valuable jewelry including a large diamond ring, a ruby ring, and gold chains."
+        },
+        {
+            "filename": "item_valuable_2.png",
+            "description": "Multiple thick stacks of bundled hundred-dollar US bills sitting on top of a layer of loose hundred-dollar bills."
+        }
+    ],
+    "media_audio": [
+        {
+            "filename": "media_audio_1.png",
+            "description": "A vintage microcassette tape used for voice recording."
+        },
+        {
+            "filename": "media_audio_2.png",
+            "description": "A digital audio waveform display showing sound frequencies."
+        }
+    ],
+    "media_cctv": [
+        {
+            "filename": "media_cctv_1.png",
+            "description": "A blurry black-and-white CCTV security camera still showing a dark scene."
+        },
+        {
+            "filename": "media_cctv_2.png",
+            "description": "A dashcam video still showing a road view from inside a vehicle."
+        }
+    ],
+    "scene_indoor": [
+        {
+            "filename": "scene_indoor_1.png",
+            "description": "A messy living room that appears to have been ransacked during a burglary, with items thrown everywhere and a smashed TV."
+        },
+        {
+            "filename": "scene_indoor_2.png",
+            "description": "A large metal vault safe sitting among bricks and rubble from a smashed wall."
+        }
+    ],
+    "scene_outdoor": [
+        {
+            "filename": "scene_outdoor_1.png",
+            "description": "A bronze statue of a soldier or gladiator carrying another person, set against a clear blue sky."
+        },
+        {
+            "filename": "scene_outdoor_2.png",
+            "description": "A dark, wet cobblestone alleyway illuminated by a single street lamp at night."
+        },
+        {
+            "filename": "scene_outdoor_3.png",
+            "description": "Yellow 'CAUTION CRIME SCENE DO NOT ENTER' tape strung up in a dense forest."
+        }
+    ],
+    "scene_vehicle": [
+        {
+            "filename": "scene_vehicle_1.png",
+            "description": "A black sedan car with a severely smashed and crumpled front end from a major collision."
+        }
+    ],
+    "tool_burglary": [
+        {
+            "filename": "tool_burglary_1.png",
+            "description": "A complete lock picking tool set in a black leather case alongside two small padlocks."
+        }
+    ],
+    "weapon_firearm": [
+        {
+            "filename": "weapon_firearm_1.png",
+            "description": "A silver and black semi-automatic handgun sealed inside a clear plastic evidence bag."
+        }
+    ],
+    "weapon_improvised": [
+        {
+            "filename": "weapon_improvised_1.png",
+            "description": "Broken brown glass beer bottles with jagged edges resting on concrete."
+        }
+    ],
+    "weapon_melee": [
+        {
+            "filename": "weapon_melee_1.png",
+            "description": "A foldable pocket knife sealed in a plastic evidence bag marked 'Victim #2', held by an investigator wearing blue gloves."
+        },
+        {
+            "filename": "weapon_melee_2.png",
+            "description": "A foldable pocket knife sealed in a plastic evidence bag marked 'Victim #2', held by an investigator wearing blue gloves."
+        },
+        {
+            "filename": "weapon_melee_3.png",
+            "description": "A silver aluminum Louisville Slugger baseball bat lying in dry autumn leaves, stained with red blood."
+        }
+    ]
+}

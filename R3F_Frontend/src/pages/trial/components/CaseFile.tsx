@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Html, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { useCaseGenerator } from '../../../store/case-generator-store/caseGeneratorContext';
+import { useFlow } from '../../../store/flow-store/flowStore';
 
 interface CaseTabletProps {
     deskPosition?: [number, number, number];
@@ -20,7 +21,37 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
     const uiContainerRef = useRef<HTMLDivElement>(null);
 
     const { caseInfo, isLoading, error, fetchCase } = useCaseGenerator();
+    const transcript = useFlow((s) => s.transcript);
     const [isViewing, setIsViewing] = useState(false);
+    // 0 = overview page; 1..N = evidence pages (one per item).
+    const [pageIndex, setPageIndex] = useState(0);
+    const evidenceCount = caseInfo?.evidence_items.length ?? 0;
+    const totalPages = 1 + evidenceCount;
+    const currentEvidence =
+        pageIndex > 0 && caseInfo ? caseInfo.evidence_items[pageIndex - 1] : null;
+
+    // Everything that belongs to the current evidence's debate (chronological):
+    //   - evidence_argument with matching evidenceName
+    //   - objection_ruling whose objection's target was such an argument
+    // The standalone `objection` action is skipped — its ruling line already
+    // encodes both the side that raised it and the reason.
+    const evidenceArguments = currentEvidence
+        ? transcript.filter((a) => {
+              if (a.kind === 'evidence_argument') {
+                  return a.evidenceName === currentEvidence.name;
+              }
+              if (a.kind === 'objection_ruling') {
+                  const objection = transcript.find((t) => t.id === a.objectionId);
+                  if (!objection || objection.kind !== 'objection') return false;
+                  const target = transcript.find((t) => t.id === objection.targetId);
+                  return (
+                      target?.kind === 'evidence_argument' &&
+                      target.evidenceName === currentEvidence.name
+                  );
+              }
+              return false;
+          })
+        : [];
 
     const lastCloseTime = useRef<number>(0);
 
@@ -65,6 +96,7 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
         if (isViewing) return;
         if (Date.now() - lastCloseTime.current < 500) return;
         setIsViewing(true);
+        setPageIndex(0);
         onOpenChange?.(true);
         if (!caseInfo && !isLoading) fetchCase();
         setTimeout(() => {
@@ -147,6 +179,10 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
 
                             .close-btn:hover { background: #c9a227 !important; }
                             .retry-btn:hover { background: rgba(212,175,55,0.1) !important; }
+                            .nav-arrow:not(:disabled):hover {
+                                background: rgba(212,175,55,0.12) !important;
+                                border-color: rgba(212,175,55,0.6) !important;
+                            }
 
                             .doc-scroll::-webkit-scrollbar { width: 5px; }
                             .doc-scroll::-webkit-scrollbar-track { background: #111620; }
@@ -202,7 +238,7 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
                                     </div>
                                 )}
 
-                                {caseInfo && !isLoading && (
+                                {caseInfo && !isLoading && pageIndex === 0 && (
                                     <div style={styles.caseContainer}>
 
                                         {/* Caption Box */}
@@ -268,6 +304,108 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
 
                                     </div>
                                 )}
+
+                                {caseInfo && !isLoading && currentEvidence && (
+                                    <div style={styles.caseContainer}>
+                                        <div className="section-reveal" style={styles.captionBox}>
+                                            <div style={styles.partiesStack}>
+                                                <div style={styles.partyGroup}>
+                                                    <span style={styles.partyTag}>
+                                                        EVIDENCE {pageIndex} OF {evidenceCount}
+                                                    </span>
+                                                    <h2 style={styles.partyName}>{currentEvidence.name}</h2>
+                                                </div>
+                                            </div>
+                                            <div style={styles.metaDataSide}>
+                                                <div style={styles.metaItem}>
+                                                    <p style={styles.metaLabel}>CASE TITLE</p>
+                                                    <p style={styles.metaValue}>{caseInfo.case_name}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="section-reveal" style={styles.section}>
+                                            <div style={styles.sectionHeader}>
+                                                <span style={styles.sectionRoman}>§</span>
+                                                <h3 style={styles.sectionTitle}>EVIDENCE DESCRIPTION</h3>
+                                            </div>
+                                            <div style={styles.sectionRule} />
+                                            <p style={styles.paragraph}>{currentEvidence.description}</p>
+                                        </div>
+
+                                        {currentEvidence.images && currentEvidence.images.length > 0 && (
+                                            <div className="section-reveal" style={styles.section}>
+                                                <div style={styles.sectionHeader}>
+                                                    <span style={styles.sectionRoman}>§</span>
+                                                    <h3 style={styles.sectionTitle}>EXHIBIT IMAGE</h3>
+                                                </div>
+                                                <div style={styles.sectionRule} />
+                                                <div style={styles.imageWrapper}>
+                                                    <img 
+                                                        src={currentEvidence.images[0].image_url} 
+                                                        alt={currentEvidence.images[0].caption || currentEvidence.name} 
+                                                        style={styles.evidenceImage} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {evidenceArguments.length > 0 && (
+                                            <div className="section-reveal" style={styles.section}>
+                                                <div style={styles.sectionHeader}>
+                                                    <span style={styles.sectionRoman}>¶</span>
+                                                    <h3 style={styles.sectionTitle}>RECORD OF ARGUMENT</h3>
+                                                </div>
+                                                <div style={styles.sectionRule} />
+                                                <div style={styles.chatLog}>
+                                                    {evidenceArguments.map((entry) => {
+                                                        if (entry.kind === 'evidence_argument') {
+                                                            const isDefense = entry.side === 'defense'
+                                                            return (
+                                                                <div
+                                                                    key={entry.id}
+                                                                    style={{
+                                                                        ...styles.chatItem,
+                                                                        alignSelf: isDefense ? 'flex-end' : 'flex-start',
+                                                                        alignItems: isDefense ? 'flex-end' : 'flex-start',
+                                                                        textAlign: isDefense ? 'right' : 'left',
+                                                                    }}
+                                                                >
+                                                                    <span style={styles.chatTag}>
+                                                                        {isDefense ? 'DEFENSE' : 'PROSECUTION'}
+                                                                    </span>
+                                                                    <div
+                                                                        style={{
+                                                                            ...styles.chatBubble,
+                                                                            ...(isDefense ? styles.chatBubbleDefense : styles.chatBubbleProsecution),
+                                                                        }}
+                                                                    >
+                                                                        {entry.text}
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        }
+                                                        if (entry.kind === 'objection_ruling') {
+                                                            const objection = transcript.find((t) => t.id === entry.objectionId)
+                                                            if (!objection || objection.kind !== 'objection') return null
+                                                            const sideLabel = objection.side === 'prosecution' ? 'Prosecution' : 'Defense'
+                                                            const rulingLabel = entry.ruling === 'sustained' ? 'SUSTAINED' : 'OVERRULED'
+                                                            return (
+                                                                <div key={entry.id} style={styles.chatRuling}>
+                                                                    <span style={styles.chatRulingTag}>OBJECTION {rulingLabel}</span>
+                                                                    <span style={styles.chatRulingDetail}>
+                                                                        Called by {sideLabel} · {objection.reason}
+                                                                    </span>
+                                                                </div>
+                                                            )
+                                                        }
+                                                        return null
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* ── FOOTER ── */}
@@ -277,11 +415,48 @@ export const CaseTablet: React.FC<CaseTabletProps> = ({
                                     <div style={styles.ruleThin} />
                                 </div>
                                 <div style={styles.footerInner}>
-                                    <p style={styles.footerHint}>
-                                        Press <span style={styles.footerKey}>TAB</span> or <span style={styles.footerKey}>ESC</span> · click outside to dismiss
-                                    </p>
-                                    <button className="close-btn" onClick={handleClose} style={styles.closeBtn}>
-                                        CLOSE FILE
+                                    <button
+                                        type="button"
+                                        className="nav-arrow"
+                                        onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+                                        disabled={pageIndex === 0}
+                                        style={{
+                                            ...styles.navArrow,
+                                            ...(pageIndex === 0 ? styles.navArrowDisabled : {}),
+                                        }}
+                                        aria-label="Previous page"
+                                    >
+                                        ‹
+                                    </button>
+
+                                    <div style={styles.footerCenter}>
+                                        <p style={styles.footerHint}>
+                                            Press <span style={styles.footerKey}>TAB</span> or <span style={styles.footerKey}>ESC</span> · click outside to dismiss
+                                        </p>
+                                        {totalPages > 1 && (
+                                            <p style={styles.pageIndicator}>
+                                                {pageIndex === 0
+                                                    ? `Overview · 1 / ${totalPages}`
+                                                    : `Evidence ${pageIndex} · ${pageIndex + 1} / ${totalPages}`}
+                                            </p>
+                                        )}
+                                        <button className="close-btn" onClick={handleClose} style={styles.closeBtn}>
+                                            CLOSE FILE
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="nav-arrow"
+                                        onClick={() => setPageIndex((p) => Math.min(totalPages - 1, p + 1))}
+                                        disabled={pageIndex >= totalPages - 1}
+                                        style={{
+                                            ...styles.navArrow,
+                                            ...(pageIndex >= totalPages - 1 ? styles.navArrowDisabled : {}),
+                                        }}
+                                        aria-label="Next page"
+                                    >
+                                        ›
                                     </button>
                                 </div>
                             </div>
@@ -584,6 +759,18 @@ const styles: { [key: string]: React.CSSProperties } = {
         color: TEXT_BODY,
         fontWeight: 300,
     },
+    imageWrapper: {
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '10px 0',
+    },
+    evidenceImage: {
+        maxWidth: '100%',
+        maxHeight: '400px',
+        objectFit: 'contain',
+        borderRadius: '4px',
+        border: `1px solid ${GOLD_DIM}`,
+    },
 
     // FOOTER
     footer: {
@@ -624,5 +811,110 @@ const styles: { [key: string]: React.CSSProperties } = {
         cursor: 'pointer',
         letterSpacing: '3px',
         transition: 'background 0.2s',
+    },
+
+    // PAGE NAVIGATION
+    footerCenter: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '8px',
+    },
+    pageIndicator: {
+        margin: 0,
+        fontSize: '12px',
+        letterSpacing: '3px',
+        color: GOLD,
+        fontFamily: '"Cinzel", serif',
+        opacity: 0.65,
+    },
+    navArrow: {
+        width: '64px',
+        height: '64px',
+        background: 'transparent',
+        color: GOLD,
+        fontSize: '40px',
+        lineHeight: 1,
+        fontFamily: '"Cinzel", serif',
+        border: `1px solid ${GOLD_MID}`,
+        borderRadius: '50%',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        transition: 'background 0.2s, border-color 0.2s, color 0.2s',
+    },
+    navArrowDisabled: {
+        opacity: 0.25,
+        cursor: 'not-allowed',
+        borderColor: GOLD_DIM,
+    },
+
+    // CHAT-STYLE EVIDENCE LOG
+    chatLog: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '18px',
+        marginTop: '10px',
+    },
+    chatItem: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        maxWidth: '78%',
+    },
+    chatTag: {
+        fontSize: '11px',
+        letterSpacing: '3px',
+        color: GOLD,
+        fontFamily: '"Cinzel", serif',
+        opacity: 0.7,
+    },
+    chatBubble: {
+        padding: '14px 20px',
+        borderRadius: '14px',
+        fontSize: '19px',
+        lineHeight: 1.6,
+        color: TEXT_BODY,
+        fontFamily: '"Crimson Pro", Georgia, serif',
+        fontWeight: 300,
+        border: `1px solid ${GOLD_DIM}`,
+        background: BG2,
+    },
+    chatBubbleProsecution: {
+        borderTopLeftRadius: '4px',
+    },
+    chatBubbleDefense: {
+        borderTopRightRadius: '4px',
+        background: 'rgba(212,175,55,0.06)',
+    },
+    chatRuling: {
+        alignSelf: 'center',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '4px',
+        padding: '12px 28px',
+        margin: '4px 0',
+        borderTop: `1px dashed ${GOLD_DIM}`,
+        borderBottom: `1px dashed ${GOLD_DIM}`,
+        background: 'rgba(212,175,55,0.04)',
+        minWidth: '60%',
+        maxWidth: '85%',
+    },
+    chatRulingTag: {
+        fontSize: '13px',
+        letterSpacing: '4px',
+        fontFamily: '"Cinzel", serif',
+        color: GOLD,
+        fontWeight: 700,
+    },
+    chatRulingDetail: {
+        fontSize: '13px',
+        letterSpacing: '2px',
+        fontFamily: '"Cinzel", serif',
+        color: TEXT_DIM,
+        textTransform: 'capitalize',
     },
 };

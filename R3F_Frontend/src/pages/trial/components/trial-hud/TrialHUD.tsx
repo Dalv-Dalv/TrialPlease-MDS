@@ -78,6 +78,7 @@ export function TrialHUD() {
   const showStart = phase === 'pre_trial' && caseInfo != null
   const showAdvance = isAITurnPhase && awaitingUser == null
   const showRuling = awaitingUser === 'objection_ruling' && pendingObjection != null
+  const showGavelCue = awaitingUser === 'final_gavel'
   const showVerdict = awaitingUser === 'verdict' && caseInfo != null
 
   // Card shows a fresh utterance when not thinking — drop the latest history
@@ -230,6 +231,15 @@ export function TrialHUD() {
                   <ShieldX size={16} />
                   {HUD_STRINGS.ruling.overrule}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {showGavelCue && (
+            <div className="trial-hud-verdict">
+              <div className="trial-hud-verdict-prompt trial-hud-verdict-prompt--gavel">
+                <Gavel size={16} />
+                {HUD_STRINGS.verdict.gavelCue}
               </div>
             </div>
           )}

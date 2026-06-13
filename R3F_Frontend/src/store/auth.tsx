@@ -35,9 +35,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ username, token: data.token })
   }, [])
 
-  const register = useCallback(async (_username: string, _password: string) => {
-    // For now, registration is not implemented on the backend.
-    throw new Error('Registration not implemented yet.')
+  const register = useCallback(async (username: string, email: string, password: string) => {
+    const res = await fetch('http://localhost:8000/api/register/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password }),
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null)
+      console.error("Register Error:", errorData)
+      throw new Error('Registration failed. Username or email might be taken.')
+    }
+
+    const data = await res.json()
+    setUser({ username: data.user.username, token: data.token })
   }, [])
 
   const logout = useCallback(() => setUser(null), [])

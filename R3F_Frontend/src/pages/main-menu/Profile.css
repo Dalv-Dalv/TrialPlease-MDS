@@ -1,0 +1,183 @@
+.profile-container {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-container.loading {
+  justify-content: center;
+  align-items: center;
+  font-size: 1.25rem;
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.back-btn:hover {
+  color: var(--color-primary-hover);
+}
+
+.profile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.logout-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-danger, #ef4444);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.profile-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.history-list {
+  width: 350px;
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: var(--color-surface);
+}
+
+.history-list h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  margin-top: 0;
+}
+
+.history-list ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.history-list li {
+  cursor: pointer;
+}
+
+.history-card {
+  padding: 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.history-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.history-list li.active .history-card,
+.history-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.verdict {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.verdict.correct { color: #22c55e; }
+.verdict.incorrect { color: #ef4444; }
+
+.case-details {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+.case-file {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.case-file h2 {
+  margin-top: 0;
+  font-size: 1.75rem;
+}
+
+.case-summary {
+  background: var(--color-surface);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  border: 1px solid var(--color-border);
+}
+
+.case-summary p {
+  margin: 0.5rem 0;
+}
+
+.transcript {
+  background: var(--color-surface);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.transcript-line {
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.transcript-line.prosecution { border-left: 4px solid #ef4444; }
+.transcript-line.defense { border-left: 4px solid #3b82f6; }
+.transcript-line.judge { border-left: 4px solid #eab308; }
+.transcript-line.witness { border-left: 4px solid #10b981; }
+
+.empty-details {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+}

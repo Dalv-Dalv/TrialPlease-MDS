@@ -84,7 +84,7 @@ type GLTFResult = GLTF & {
 }
 
 export function TrialScene(props: JSX.IntrinsicElements['group']) {
-	const { nodes, materials } = useGLTF('/models/Final_Courtroom.glb') as unknown as GLTFResult
+	var { nodes, materials } = useGLTF('/models/Final_Courtroom.glb') as unknown as GLTFResult
 
 	const gavelRef = useRef<GavelHandle>(null)
 
@@ -98,14 +98,20 @@ export function TrialScene(props: JSX.IntrinsicElements['group']) {
 			const delay = 1000 + Math.random() * 1000;
 			timeouts.push(setTimeout(() => setRoleState('prosecution2', 'sit_to_stand'), delay));
 		} else {
-			setRoleState('prosecution2', 'stand_to_sit')
+			const currentState = useTrialSceneAnimation.getState().roleStates.prosecution2;
+			if (currentState !== 'sit' && currentState !== 'stand_to_sit') {
+				setRoleState('prosecution2', 'stand_to_sit')
+			}
 		}
 
 		if (activeSpeaker === 'defense') {
 			const delay = 1000 + Math.random() * 1000;
 			timeouts.push(setTimeout(() => setRoleState('defense2', 'sit_to_stand'), delay));
 		} else {
-			setRoleState('defense2', 'stand_to_sit')
+			const currentState = useTrialSceneAnimation.getState().roleStates.defense2;
+			if (currentState !== 'sit' && currentState !== 'stand_to_sit') {
+				setRoleState('defense2', 'stand_to_sit')
+			}
 		}
 
 		return () => {
@@ -115,7 +121,7 @@ export function TrialScene(props: JSX.IntrinsicElements['group']) {
 
 	// 1. Load the HDR files
 	const furnitureHdr = useLoader(EXRLoader, '/textures/Furniture_Bake_Final.exr')
-	const roomHdr = useLoader(EXRLoader, '/textures/Room_Bake_Final.exr')
+	var roomHdr = useLoader(EXRLoader, '/textures/Room_Bake_Final.exr')
 	// const furnitureHdr = useLoader(RGBELoader, '/textures/Furniture_Bake_Final.hdr')
 	// const roomHdr = useLoader(RGBELoader, '/textures/Room_Bake_Final.hdr')
 

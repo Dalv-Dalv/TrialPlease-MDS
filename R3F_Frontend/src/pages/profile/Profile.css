@@ -1,0 +1,674 @@
+/* Profile inherits .home-shell, .home-topbar, .home-btn etc. from MainMenu.css */
+
+/* ── Main layout ──────────────────────────────────────────────────── */
+.profile-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2.5rem 1.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+/* ── Header ───────────────────────────────────────────────────────── */
+.profile-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 560px;
+}
+
+.profile-rule-set {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.profile-rule-set--bottom { flex-direction: column-reverse; }
+
+.profile-rule { width: 100%; }
+.profile-rule--thick { height: 2px; background: rgba(212, 175, 55, 0.30); }
+.profile-rule--thin  { height: 1px; background: rgba(212, 175, 55, 0.15); }
+
+.profile-title {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #f0e8c0 0%, #d4af37 60%, #b8941e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.profile-subtitle {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
+  color: #d4af37;
+  opacity: 0.65;
+}
+
+/* ── Stats strip ──────────────────────────────────────────────────── */
+.pf-stats {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  background: #111620;
+  border: 1px solid rgba(212, 175, 55, 0.20);
+  border-radius: 4px;
+  width: 100%;
+  max-width: 720px;
+  flex-wrap: wrap;
+}
+
+.pf-stat {
+  flex: 1 1 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem;
+}
+
+.pf-stat-divider {
+  width: 1px;
+  background: rgba(212, 175, 55, 0.15);
+  flex-shrink: 0;
+}
+
+.pf-stat-value {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e8e4d8;
+  letter-spacing: 0.05em;
+}
+.pf-stat-value--win  { color: #7eb87e; }
+.pf-stat-value--loss { color: #c0634a; }
+
+.pf-stat-label {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #7a7670;
+  text-align: center;
+}
+
+/* ── Section wrapper ──────────────────────────────────────────────── */
+.profile-section {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.875rem;
+}
+
+.profile-section-roman {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.875rem;
+  color: #d4af37;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.profile-section-title {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: #7a7670;
+  text-transform: uppercase;
+}
+
+.profile-section-rule {
+  height: 1px;
+  background: rgba(212, 175, 55, 0.15);
+}
+
+/* ── Loading / Error states ───────────────────────────────────────── */
+.pf-state-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.pf-spinner {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(212, 175, 55, 0.15);
+  border-top-color: #d4af37;
+  border-radius: 50%;
+  animation: pf-spin 1s linear infinite;
+}
+@keyframes pf-spin { to { transform: rotate(360deg); } }
+
+.pf-state-icon {
+  margin: 0;
+  font-size: 2rem;
+  color: #c0392b;
+}
+
+.pf-state-title {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: #e74c3c;
+  text-transform: uppercase;
+}
+
+.pf-state-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #7a7670;
+  font-style: italic;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────── */
+.profile-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 3rem 2rem;
+  background: #111620;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.profile-empty-icon {
+  font-size: 2.5rem;
+  color: #d4af37;
+  opacity: 0.2;
+  line-height: 1;
+}
+
+.profile-empty-title {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #7a7670;
+  text-transform: uppercase;
+}
+
+.profile-empty-body {
+  margin: 0;
+  font-size: 1rem;
+  color: #4a4640;
+  font-style: italic;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.profile-start-btn {
+  margin-top: 0.5rem;
+  padding: 0.65rem 1.75rem;
+  background: #d4af37;
+  border: none;
+  border-radius: 3px;
+  color: #0d1117;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 150ms, transform 80ms;
+}
+.profile-start-btn:hover  { background: #c9a227; }
+.profile-start-btn:active { transform: scale(0.985); }
+
+/* ── Case list ────────────────────────────────────────────────────── */
+.pf-case-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+/* ── Case card ────────────────────────────────────────────────────── */
+.pf-case {
+  background: #111620;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color 150ms;
+}
+
+.pf-case--open {
+  border-color: rgba(212, 175, 55, 0.38);
+}
+
+/* Summary row (the always-visible button) */
+.pf-case-summary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 150ms;
+}
+
+.pf-case-summary:hover {
+  background: rgba(212, 175, 55, 0.04);
+}
+
+.pf-case-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.pf-case-type {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.25em;
+  color: #d4af37;
+  opacity: 0.65;
+}
+
+.pf-case-name {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #e8e4d8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-case-right {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  flex-shrink: 0;
+}
+
+.pf-case-date {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: #7a7670;
+}
+
+.pf-case-chevron {
+  font-size: 0.55rem;
+  color: #d4af37;
+  opacity: 0.5;
+}
+
+/* ── Verdict badge ────────────────────────────────────────────────── */
+.pf-badge {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+
+.pf-badge--win {
+  color: #7eb87e;
+  border-color: rgba(126, 184, 126, 0.40);
+  background: rgba(126, 184, 126, 0.08);
+}
+
+.pf-badge--loss {
+  color: #c0634a;
+  border-color: rgba(192, 99, 74, 0.40);
+  background: rgba(192, 99, 74, 0.08);
+}
+
+.pf-badge--unknown {
+  color: #7a7670;
+  border-color: rgba(122, 118, 112, 0.30);
+  background: transparent;
+}
+
+/* ── Expanded detail ──────────────────────────────────────────────── */
+.pf-case-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0 1.25rem 1.5rem;
+  border-top: 1px solid rgba(212, 175, 55, 0.12);
+}
+
+/* ── Grid layouts ─────────────────────────────────────────────────── */
+.pf-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pf-grid--2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.pf-grid--evidence {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+/* ── Section inside detail ────────────────────────────────────────── */
+.pf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.pf-section-hdr {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
+}
+
+.pf-section-roman {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.75rem;
+  color: #d4af37;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+
+.pf-section-title {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: #7a7670;
+  text-transform: uppercase;
+}
+
+.pf-section-rule {
+  height: 1px;
+  background: rgba(212, 175, 55, 0.10);
+}
+
+/* ── Info box (parties) ───────────────────────────────────────────── */
+.pf-box {
+  background: rgba(10, 12, 16, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  border-radius: 3px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pf-box-label {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.56rem;
+  letter-spacing: 0.22em;
+  color: #d4af37;
+  opacity: 0.55;
+  text-transform: uppercase;
+}
+
+.pf-box-value {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #c4c0b4;
+  line-height: 1.5;
+}
+
+/* ── Paragraph ────────────────────────────────────────────────────── */
+.pf-para {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #c4c0b4;
+  font-weight: 300;
+}
+
+.pf-para--truth {
+  color: #e8e4d8;
+  font-style: italic;
+}
+
+/* ── Evidence item ────────────────────────────────────────────────── */
+.pf-evidence-item {
+  background: rgba(10, 12, 16, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  border-radius: 3px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pf-evidence-name {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #d4af37;
+  opacity: 0.85;
+}
+
+.pf-evidence-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #7a7670;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+/* ── Witness ──────────────────────────────────────────────────────── */
+.pf-witness-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.pf-witness {
+  background: rgba(10, 12, 16, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.10);
+  border-radius: 3px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pf-witness-hdr {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.pf-witness-name {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #e8e4d8;
+}
+
+.pf-witness-role {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.15em;
+  color: #d4af37;
+  opacity: 0.6;
+  text-transform: uppercase;
+}
+
+/* ── Verdict comparison row ───────────────────────────────────────── */
+.pf-verdict-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(10, 12, 16, 0.7);
+  border: 1px solid rgba(212, 175, 55, 0.20);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.pf-verdict-col {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-right: 1px solid rgba(212, 175, 55, 0.10);
+}
+
+.pf-verdict-col:last-child { border-right: none; }
+
+.pf-verdict-col--outcome {
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0.875rem 1.25rem;
+}
+
+.pf-verdict-value {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.85rem;
+  color: #c4c0b4;
+  letter-spacing: 0.04em;
+}
+
+.pf-verdict-value--correct {
+  color: #7eb87e;
+}
+
+/* ── Absolute truth reveal ────────────────────────────────────────── */
+.pf-truth {
+  background: rgba(212, 175, 55, 0.04);
+  border: 1px solid rgba(212, 175, 55, 0.20);
+  border-radius: 3px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pf-truth-label {
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  color: #d4af37;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+/* ── Timeline ─────────────────────────────────────────────────────── */
+.pf-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-left: 0.5rem;
+  margin-top: 0.5rem;
+  border-left: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.pf-tl-item {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.pf-tl-dot {
+  position: absolute;
+  left: -4px;
+  top: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.5);
+  border: 1px solid #111620;
+}
+
+.pf-tl-item--major .pf-tl-dot {
+  background: #d4af37;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+.pf-tl-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: rgba(10, 12, 16, 0.4);
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(212, 175, 55, 0.08);
+  border-radius: 3px;
+}
+
+.pf-tl-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.pf-tl-side {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.pf-tl-side--prosecution { color: #d45f45; }
+.pf-tl-side--defense     { color: #4a90e2; }
+.pf-tl-side--judge       { color: #d4af37; }
+.pf-tl-side--system      { color: #7a7670; }
+
+.pf-tl-label {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  color: #7a7670;
+  text-transform: uppercase;
+}
+
+.pf-tl-body {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #c4c0b4;
+  font-style: italic;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .pf-grid--2 { grid-template-columns: 1fr; }
+  .pf-stats { flex-wrap: wrap; }
+  .pf-stat-divider { display: none; }
+}

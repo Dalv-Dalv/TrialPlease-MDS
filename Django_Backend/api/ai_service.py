@@ -2,32 +2,120 @@ import os
 import json
 import random
 from google import genai
-from google.genai import types 
+from google.genai import types
 from dotenv import load_dotenv
+from pydantic import BaseModel
+class LawyerEvaluationSchema(BaseModel):
+    role_adherence: int
+    coherence: int
+    relevance: int
+    argument_quality: int
+    overall_quality: int
+    feedback: str
 
-# Încărcăm variabilele de mediu (asigură-te că fișierul .env e în același loc)
-load_dotenv()
-API_KEY = os.getenv("GEMINI_API_KEY")
-def getAgentJsonAnswer(prompt):
-  client = genai.Client(api_key=API_KEY)
-  response = client.models.generate_content(
-    model="gemini-2.5-flash",
-    contents=prompt,
-    config=types.GenerateContentConfig(response_mime_type="application/json")
-  )
+class CaseEvaluationSchema(BaseModel):
+    case_coherence: int
+    legal_playability: int
+    completeness: int
+    overall_quality: int
+    feedback: str
+
+class WitnessEvaluationSchema(BaseModel):
+    role_adherence: int
+    coherence: int
+    relevance: int
+    reveal_control: int
+    overall_quality: int
+    feedback: str
+class GeminiAgent:
+  """Base class to handle Gemini API connections and JSON formatting."""
+  def __init__(self, model: str = "gemini-2.5-flash"):
+    load_dotenv()
+    self.api_key = os.getenv("GEMINI_API_KEY")
+    if not self.api_key:
+      raise ValueError("GEMINI_API_KEY not found in environment variables.")
     
-  raw_text = response.text.strip()
+    self.client = genai.Client(api_key=self.api_key)
+    self.model = model
+
+  def get_json_answer(self, prompt: str, schema: type[BaseModel] = None) -> dict:
+      """Sends the prompt to Gemini and parses the strict JSON response."""
+      
+      config_args = {"response_mime_type": "application/json"}
+      if schema:
+          config_args["response_schema"] = schema
+
+      response = self.client.models.generate_content(
+        model=self.model,
+        contents=prompt,
+        config=types.GenerateContentConfig(**config_args)
+      )
+      raw_text = response.text.strip()
+      
+      print(f"==== AI RESPONSE ({self.__class__.__name__}) ====")
+      print(raw_text)
+      print("=====================")
+      
+      # Strip markdown code blocks if any
+      if raw_text.startswith("```"):
+        first_newline = raw_text.find("\n")
+        last_backticks = raw_text.rfind("```")
+        if first_newline != -1 and last_backticks != -1:
+          raw_text = raw_text[first_newline+1:last_backticks].strip()
+          
+      try:
+        return json.loads(raw_text)
+      except json.JSONDecodeError:
+        # Attempt to repair common JSON syntax issues
+        import re
+        
+        # Fix invalid backslash escapes
+        def replace_invalid(match):
+            pos = match.start()
+            sub = raw_text[pos+1 : pos+6]
+            if not sub:
+                return "\\\\"
+            first = sub[0]
+            if first in ['"', '\\', '/', 'b', 'f', 'n', 'r', 't']:
+                return "\\"
+            if first == 'u' and len(sub) >= 5 and all(c in '0-9a-fA-F' for c in sub[1:5]):
+                return "\\"
+            return "\\\\"
+            
+        repaired_text = re.sub(r'\\', replace_invalid, raw_text)
+        
+        # Fix trailing commas in objects and arrays
+        repaired_text = re.sub(r',\s*([\]}])', r'\1', repaired_text)
+        
+        try:
+          return json.loads(repaired_text)
+        except Exception:
+          # If repair fails, fall back to parsing the original raw text
+          return json.loads(raw_text)
+
+
+class CaseArchitect(GeminiAgent):
+  """Responsible for generating the courtroom simulation case."""
   
-  print("==== AI RESPONSE ====")
-  print(raw_text)
-  print("=====================")
+  def generate_case(self) -> dict:
+    import os
+    map_path = os.path.join(os.path.dirname(__file__), 'evidence_images_map.json')
+    try:
+        with open(map_path, 'r', encoding='utf-8') as f:
+            evidence_map = f.read()
+    except Exception:
+        evidence_map = "{}"
 
-  return json.loads(raw_text) # Returnăm DOAR dicționarul curat!
-
-def generateCase():
-  prompt = '''You are a professional paralegal and scenario architect for a courtroom simulation game. Your task is to create a complex and balanced, but fun, fictional court case that allows for arguments for both the defense and the prosecution.
+    prompt = '''You are a professional paralegal and scenario architect for a courtroom simulation game. Your task is to create a complex and balanced, but fun, fictional court case that allows for arguments for both the defense and the prosecution.
 The court case should be fun and interesting.
-You must generate the case details and respond STRICTLY with a valid JSON object. 
+
+Below is a JSON map of available evidence images that you can use. The map groups images by category, and each item has a "filename" and a "description" of what the image shows. 
+When creating evidence for this case, you MUST pick an appropriate image from this catalog based on the description that best fits the evidence item you are creating.
+
+AVAILABLE IMAGES CATALOG:
+''' + evidence_map + '''
+
+You must generate the case details and respond STRICTLY with a valid JSON object.
 
 The JSON structure MUST be exactly the following:
 {
@@ -38,13 +126,13 @@ The JSON structure MUST be exactly the following:
   "absolute_truth": "The hidden, absolute reality of what happened. Keep it secret from the player.",
   "defendant": "NAME: brief description of the accused person",
   "victim": "NAME: brief description of the victim/plaintiff",
-  "correct_verdict": "what is the correct verdict based on the absolute truth",
+  "correct_verdict": "what is the correct verdict based on the absolute truth, must be one of the possible choices",
   "possible_choices": [
      {"verdict_option": "Verdict Option 1", "score_points": 100},
      {"verdict_option": "Verdict Option 2", "score_points": 50}
   ],
   "evidence_items": [
-    {"name": "Evidence 1", "description": "Description"}
+    {"name": "Evidence 1", "description": "Description", "image": "image_filename_from_catalog.png"}
   ],
   "witnesses": [
     {
@@ -54,28 +142,41 @@ The JSON structure MUST be exactly the following:
       "hidden_truth": "What they actually know but are hiding or misrepresenting."
     }
   ]
-}     
+}    
 '''
-  return getAgentJsonAnswer(prompt)
+    return self.get_json_answer(prompt)
 
 
-def getAgentAcuserReply(case_json, spoken_statements, confidence_level="normal", phase="unknown", evidence_name=None):
-  
-  evidence_context = f"We are currently debating this piece of evidence: {evidence_name}" if evidence_name else "We are NOT currently discussing a specific piece of evidence."
-  
-  force_objection = False
-  if phase == 'evidence_debate' and len(spoken_statements) > 0:
-      last_action = spoken_statements[-1]
-      # Only consider objecting if the last action was a statement made by the defense
-      if last_action.get('kind') == 'evidence_argument' and last_action.get('side') == 'defense':
-          force_objection = random.choice([True, False])
-          
-  print(f"[PROSECUTOR] Phase: {phase}, Force Objection: {force_objection}")
-      
-  objection_rule = "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'objection' and provide a valid 'reason' to object to the opponent's last statement." if force_objection else "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'statement'. Do NOT object."
+class BaseLawyer(GeminiAgent):
+    """Base class for the attorneys containing shared prompt logic."""
+    def __init__(self):
+        super().__init__()
+        self.role_name = "Lawyer"
+        self.opponent_side = "unknown"
+        self.persona_instructions = ""
 
-  prompt = f'''
-You are a relentless, logical, and justice-oriented prosecutor / prosecution lawyer. Your role is to demonstrate the defendant's guilt using available evidence, testimony, and irrefutable logic, demanding their punishment for the crimes committed against the victim.
+    def _determine_objection(self, phase: str, spoken_statements: list) -> bool:
+        """Determines if the lawyer should forcefully object to the opponent's last statement."""
+        if phase == 'evidence_debate' and len(spoken_statements) > 0:
+            last_action = spoken_statements[-1]
+            if last_action.get('kind') == 'evidence_argument' and last_action.get('side') == self.opponent_side:
+                return random.choice([True, False])
+        return False
+
+    def get_reply(self, case_json: dict, spoken_statements: list, confidence_level: str = "normal", phase: str = "unknown", evidence_name: str = None) -> dict:
+        evidence_context = f"We are currently debating this piece of evidence: {evidence_name}" if evidence_name else "We are NOT currently discussing a specific piece of evidence."
+        
+        force_objection = self._determine_objection(phase, spoken_statements)
+        print(f"[{self.role_name.upper()}] Phase: {phase}, Force Objection: {force_objection}")
+        
+        objection_rule = (
+            "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'objection' and provide a valid 'reason' to object to the opponent's last statement." 
+            if force_objection 
+            else "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'statement'. Do NOT object."
+        )
+
+        prompt = f'''
+{self.persona_instructions}
 Your current confidence level is: {confidence_level}. If high, be aggressive and press hard. If low, be hesitant or flustered.
 
 TRIAL CONTEXT:
@@ -114,71 +215,32 @@ Here are your case details:
 Here are the spoken statements from the case already:
 {json.dumps(spoken_statements)}
 '''
-  ans = getAgentJsonAnswer(prompt)
-  print(ans)
-  return ans
+        return self.get_json_answer(prompt)
 
-def getAgentDefendentReply(case_json, spoken_statements, confidence_level="normal", phase="unknown", evidence_name=None):
-  
-  evidence_context = f"We are currently debating this piece of evidence: {evidence_name}" if evidence_name else "We are NOT currently discussing a specific piece of evidence."
-  
-  force_objection = False
-  if phase == 'evidence_debate' and len(spoken_statements) > 0:
-      last_action = spoken_statements[-1]
-      # Only consider objecting if the last action was a statement made by the prosecution
-      if last_action.get('kind') == 'evidence_argument' and last_action.get('side') == 'prosecution':
-          force_objection = random.choice([True, False])
-          
-  print(f"[DEFENSE] Phase: {phase}, Force Objection: {force_objection}")
-      
-  objection_rule = "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'objection' and provide a valid 'reason' to object to the opponent's last statement." if force_objection else "CRITICAL INSTRUCTION: For your JSON response this turn, you MUST set 'action' to 'statement'. Do NOT object."
 
-  prompt = f'''
-You are a top-tier defense attorney, extremely analytical, eloquent, and persuasive. Your role is to defend the accused in a given case, find loopholes in the prosecution's evidence, question the credibility of witnesses, and construct a narrative of innocence or mitigating circumstances.
-Your current confidence level is: {confidence_level}. If high, be aggressive and press hard. If low, be hesitant or flustered.
+class Prosecutor(BaseLawyer):
+    """Specific implementation for the prosecution."""
+    def __init__(self):
+        super().__init__()
+        self.role_name = "Prosecutor"
+        self.opponent_side = "defense"
+        self.persona_instructions = "You are a relentless, logical, and justice-oriented prosecutor / prosecution lawyer. Your role is to demonstrate the defendant's guilt using available evidence, testimony, and irrefutable logic, demanding their punishment for the crimes committed against the victim."
 
-TRIAL CONTEXT:
-Current Trial Phase: {phase}
-{evidence_context}
-{objection_rule}
 
-Do not try to call witnesses to the stand. You may however refer to them and their statements.
+class DefenseAttorney(BaseLawyer):
+    """Specific implementation for the defense."""
+    def __init__(self):
+        super().__init__()
+        self.role_name = "Defense"
+        self.opponent_side = "prosecution"
+        self.persona_instructions = "You are a top-tier defense attorney, extremely analytical, eloquent, and persuasive. Your role is to defend the accused in a given case, find loopholes in the prosecution's evidence, question the credibility of witnesses, and construct a narrative of innocence or mitigating circumstances."
 
-You will receive the case details in JSON format. You must analyze the case and respond STRICTLY with a valid JSON object representing your next action. Do not include any other text, greetings, or formatting outside of the raw JSON object.
 
-The JSON structure must be as follows:
-{{
-  "action": "statement" or "objection",
-  "reason": "If objection, provide reason like 'hearsay', 'leading', 'speculation', etc. Otherwise null.",
-  "dialogue": "Your statement or the dialogue for your objection, wrapped in <speak> tags."
-}}
-
-Your dialogue reply must not exceed 500 characters. Make sure to space out your paragraphs on new lines if you have multiple.
-Crucially, you MUST use SSML tags to convey your emotion, confidence, and pacing. 
-Wrap the entire text in <speak>...</speak>. 
-Use <break time="Xms"/> for dramatic pauses. Break times must NOT exceed 100ms in the middle of sentences, and can be up to 200ms between sentences. Do NOT place a break after every comma; commas already add a natural pause, so only use breaks after commas if absolutely necessary for extreme dramatic effect.
-Do NOT use literal ellipsis ("...") just because you added a break tag. Keep the text punctuation clean.
-Use <prosody pitch="high/low" rate="fast/slow">...</prosody> for tonal shifts.
-Use <emphasis>...</emphasis> to stress important words, but use it SPARINGLY (only 1 or 2 words per reply). Do NOT use asterisks (*) for emphasis.
-
-If the last event in the transcript is an 'objection_ruling', pay close attention:
-- If YOUR objection was 'sustained', you won. The opponent's last statement is stricken. You should confidently continue your point.
-- If YOUR objection was 'overruled' (rejected), you lost. You must accept the judge's decision and adjust your argument.
-- If YOUR OPPONENT'S objection against you was 'sustained', your last statement is stricken. You must apologize to the court and provide a new, different argument.
-- If YOUR OPPONENT'S objection against you was 'overruled' (rejected), you won. You may continue pressing your point.
-
-Here are your case details:
-{json.dumps(case_json)}
-
-Here are the spoken statements from the case already:
-''' + json.dumps(spoken_statements)
-
-  ans = getAgentJsonAnswer(prompt)
-  print(ans)
-  return ans
-
-def getWitnessReply(case_json, witness_data, lawyer_question, spoken_statements):
-  prompt = f'''
+class WitnessAgent(GeminiAgent):
+    """Handles generating replies for witnesses on the stand."""
+    
+    def get_reply(self, case_json: dict, witness_data: dict, lawyer_question: str, spoken_statements: list) -> dict:
+        prompt = f'''
 You are a witness in a courtroom trial. Your persona details are provided below.
 You must answer the lawyer's question in character. Keep in mind your initial statement, but also your 'hidden_truth'. If pressured effectively, you might let some of your hidden truth slip.
 
@@ -195,4 +257,98 @@ Previous Statements: {json.dumps(spoken_statements)}
 
 Lawyer's Question: {lawyer_question}
 '''
-  return getAgentJsonAnswer(prompt)
+        return self.get_json_answer(prompt)
+
+
+class AIEvaluator(GeminiAgent):
+    """Responsible for evaluating the quality of AI responses."""
+    
+    def evaluate_lawyer_reply(self, case_json: dict, spoken_statements: list, role: str, reply: dict) -> dict:
+        """Evaluates a lawyer's reply (Prosecutor or Defense) for quality."""
+        prompt = f"""You are an expert AI quality evaluator and legal analyst. Your task is to evaluate the quality of an AI-generated courtroom response (either prosecutor or defense) based on the case details and the transcript of spoken statements.
+
+You must evaluate the response on the following criteria:
+1. Role Adherence (1-10): Did the AI sound like a proper lawyer of their side?
+2. Coherence and Flow (1-10): Is the reply logical and coherent?
+3. Relevance (1-10): Is the response directly relevant to the case context and the trial transcript?
+4. Quality of Argument (1-10): Is the argument persuasive or logical?
+5. Overall Quality (1-10): Combined score.
+6. Feedback: Detailed commentary on what was good or what could be improved.
+
+Response to evaluate:
+{json.dumps(reply)}
+
+Context:
+Role: {role}
+Case Details: {json.dumps(case_json)}
+Transcript: {json.dumps(spoken_statements)}
+
+Respond STRICTLY with a valid JSON object of this structure:
+{{
+  "role_adherence": <score between 1 and 10>,
+  "coherence": <score between 1 and 10>,
+  "relevance": <score between 1 and 10>,
+  "argument_quality": <score between 1 and 10>,
+  "overall_quality": <score between 1 and 10>,
+  "feedback": "detailed feedback text"
+}}
+"""
+        return self.get_json_answer(prompt, schema=LawyerEvaluationSchema)
+
+    def evaluate_case_generation(self, generated_case: dict) -> dict:
+        """Evaluates the quality of a generated courtroom case."""
+        prompt = f"""You are an expert scenario evaluator. Evaluate the quality of the generated courtroom case.
+
+Criteria:
+1. Scenario Coherence (1-10): Are case description, police report, and absolute truth consistent?
+2. Legal Playability (1-10): Is the case interesting and balanced for both prosecution and defense?
+3. Completeness (1-10): Are evidence items and witnesses fully detailed and relevant?
+4. Overall Quality (1-10): Combined score.
+5. Feedback: Detailed commentary on what was good or what could be improved.
+
+Respond STRICTLY with a valid JSON object of this structure:
+{{  
+  "case_coherence": <score between 1 and 10>,
+  "legal_playability": <score between 1 and 10>,
+  "completeness": <score between 1 and 10>,
+  "overall_quality": <score between 1 and 10>,
+  "feedback": "detailed feedback text"
+}}
+
+Generated Case:
+{json.dumps(generated_case)}
+"""
+        return self.get_json_answer(prompt, schema=CaseEvaluationSchema)
+
+    def evaluate_witness_reply(self, case_json: dict, witness_data: dict, lawyer_question: str, spoken_statements: list, reply: dict) -> dict:
+        """Evaluates a witness's reply for quality."""
+        prompt = f"""You are an expert AI quality evaluator and scenario analyst. Your task is to evaluate the quality of an AI-generated witness response in a courtroom trial.
+
+You must evaluate the response on the following criteria:
+1. Role Adherence (1-10): Did the witness speak in character and align with their persona?
+2. Coherence (1-10): Is the witness's reply clear and coherent?
+3. Relevance (1-10): Does the reply directly answer the lawyer's question?
+4. Reveal Control (1-10): Did the witness appropriately handle their hidden truth (neither spilling it too easily nor refusing to answer when pressured)?
+5. Overall Quality (1-10): Combined score.
+6. Feedback: Detailed commentary on what was good or what could be improved.
+
+Response to evaluate:
+{json.dumps(reply)}
+
+Context:
+Case Details: {json.dumps(case_json)}
+Witness Persona: {json.dumps(witness_data)}
+Lawyer's Question: {lawyer_question}
+Previous Statements: {json.dumps(spoken_statements)}
+
+Respond STRICTLY with a valid JSON object of this structure:
+{{
+  "role_adherence": <score between 1 and 10>,
+  "coherence": <score between 1 and 10>,
+  "relevance": <score between 1 and 10>,
+  "reveal_control": <score between 1 and 10>,
+  "overall_quality": <score between 1 and 10>,
+  "feedback": "detailed feedback text"
+}}
+"""
+        return self.get_json_answer(prompt, schema=WitnessEvaluationSchema)

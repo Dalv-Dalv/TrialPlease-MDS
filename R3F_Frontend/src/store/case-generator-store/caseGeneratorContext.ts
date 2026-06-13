@@ -8,6 +8,7 @@ export interface VerdictOption {
 export interface Evidence {
   name: string
   description: string
+  images?: { image_url: string; caption?: string }[]
 }
 
 export interface Witness {
