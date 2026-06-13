@@ -53,6 +53,9 @@ export type DebriefResult = {
   correct_verdict: string
   absolute_truth: string
   user_verdict: string
+  /** Score points awarded for the verdict chosen by the user (matches the
+   *  selected Choice.score_points on the backend). */
+  score: number
 }
 
 /** Compact entry kept in flow.recentSpeech for the HUD to render history. */

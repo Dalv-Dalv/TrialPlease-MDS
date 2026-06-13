@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Case, Choice, Evidence, EvidenceImage, Witness
+from .models import Case, Choice, Evidence, EvidenceImage, Witness, UserCaseHistory
 
 # Înregistrarea simplă (cea mai rapidă variantă)
 # admin.site.register(Case)
@@ -40,3 +40,11 @@ class WitnessAdmin(admin.ModelAdmin):
     list_display = ('name', 'role', 'case')
     list_filter = ('case',)
     search_fields = ('name', 'role')
+
+@admin.register(UserCaseHistory)
+class UserCaseHistoryAdmin(admin.ModelAdmin):
+    list_display = ('user', 'case', 'verdict_given', 'is_correct', 'score', 'created_at')
+    list_filter = ('is_correct', 'created_at')
+    search_fields = ('user__username', 'case__case_name', 'verdict_given')
+    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('user', 'case')

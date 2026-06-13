@@ -128,20 +128,33 @@ class CaseViewSet(viewsets.ModelViewSet):
         case = self.get_object()
         user_verdict = request.data.get('verdict', '')
         transcript = request.data.get('transcript', [])
-        
+
         verdict_correct = (user_verdict.lower().strip() == case.correct_verdict.lower().strip())
-        
+
+        # Score = score_points of the Choice the user picked. Case-insensitive
+        # match on verdict_option; defaults to 0 if no matching choice exists.
+        chosen_choice = next(
+            (
+                c for c in case.possible_choices.all()
+                if c.verdict_option.lower().strip() == user_verdict.lower().strip()
+            ),
+            None,
+        )
+        score = chosen_choice.score_points if chosen_choice else 0
+
         if request.user.is_authenticated:
             UserCaseHistory.objects.create(
                 user=request.user,
                 case=case,
                 transcript=transcript,
                 verdict_given=user_verdict,
-                is_correct=verdict_correct
+                is_correct=verdict_correct,
+                score=score,
             )
-        
+
         return Response({
             "absolute_truth": case.absolute_truth,
             "verdict_correct": verdict_correct,
             "correct_verdict": case.correct_verdict,
+            "score": score,
         }, status=status.HTTP_200_OK)

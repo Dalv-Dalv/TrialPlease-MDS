@@ -85,4 +85,4 @@ class UserCaseHistorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserCaseHistory
-        fields = ['id', 'user', 'case', 'transcript', 'verdict_given', 'is_correct', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'case', 'transcript', 'verdict_given', 'is_correct', 'score', 'created_at', 'updated_at']

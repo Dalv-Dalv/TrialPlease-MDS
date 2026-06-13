@@ -141,10 +141,14 @@ async function fetchDebrief(caseId: number, verdict: string, transcript: TrialAc
   } catch (err) {
     console.warn('[flow] debrief API failed, falling back to stub:', err)
     const correct = verdict === currentCase?.correct_verdict
+    const chosen = currentCase?.possible_choices.find(
+      (c) => c.verdict_option.trim().toLowerCase() === verdict.trim().toLowerCase(),
+    )
     return {
       verdict_correct: correct,
       correct_verdict: currentCase?.correct_verdict ?? 'Unknown',
       user_verdict: verdict,
+      score: chosen?.score_points ?? 0,
       absolute_truth:
         currentCase != null
           ? `(stub) the absolute truth would be returned by the backend; ${correct ? 'your verdict matches' : 'your verdict does not match'} the recorded correct verdict (${currentCase.correct_verdict}).`
