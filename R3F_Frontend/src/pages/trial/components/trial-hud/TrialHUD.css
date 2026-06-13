@@ -281,6 +281,20 @@
   color: #d4af37;
 }
 
+.trial-hud-verdict-prompt--gavel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  animation: trial-hud-gavel-pulse 2s ease-in-out infinite;
+}
+
+@keyframes trial-hud-gavel-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; text-shadow: 0 0 12px rgba(212, 175, 55, 0.5); }
+}
+
 .trial-hud-actions {
   display: flex;
   gap: 0.5rem;

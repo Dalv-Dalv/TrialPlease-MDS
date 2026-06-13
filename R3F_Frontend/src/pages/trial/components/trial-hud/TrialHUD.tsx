@@ -18,7 +18,6 @@ import { TrialDebriefModal } from '../debrief-modal/TrialDebriefModal'
 import './TrialHUD.css'
 
 export function TrialHUD() {
-  const [isHistoryOpen, setIsHistoryOpen] = useState(true)
   const [isCardOpen, setIsCardOpen] = useState(true)
   const phase = useFlow((s) => s.phase)
   const activeSpeaker = useFlow((s) => s.activeSpeaker)
@@ -26,7 +25,6 @@ export function TrialHUD() {
   const pendingObjection = useFlow((s) => s.pendingObjection)
   const awaitingUser = useFlow((s) => s.awaitingUser)
   const transcript = useFlow((s) => s.transcript)
-  const recentSpeech = useFlow((s) => s.recentSpeech)
 
   const { caseInfo } = useCaseGenerator()
   const defenseState = useLawyers((s) => s.defense)
@@ -76,14 +74,8 @@ export function TrialHUD() {
   const showStart = phase === 'pre_trial' && caseInfo != null
   const showAdvance = isAITurnPhase && awaitingUser == null
   const showRuling = awaitingUser === 'objection_ruling' && pendingObjection != null
+  const showGavelCue = awaitingUser === 'final_gavel'
   const showVerdict = awaitingUser === 'verdict' && caseInfo != null
-
-  // Card shows a fresh utterance when not thinking — drop the latest history
-  // entry so it isn't rendered twice.
-  const lastHistoryItem = recentSpeech.length > 0 ? recentSpeech[recentSpeech.length - 1] : null
-  const cardShowsSpeech = speakerState?.lastUtterance != null && !speakerState.isThinking
-  const shouldDropLast = cardShowsSpeech && lastHistoryItem?.side === activeSpeaker && lastHistoryItem?.text === speakerState?.lastUtterance
-  const historyEntries = shouldDropLast ? recentSpeech.slice(0, -1) : recentSpeech
 
   // Enter triggers Continue when it's available and no AI turn is in flight.
   useEffect(() => {
@@ -114,53 +106,6 @@ export function TrialHUD() {
       </div>
 
       <div className="trial-hud-stack">
-        {historyEntries.length > 0 && (
-          <div
-            className={`trial-hud-history ${isHistoryOpen ? '' : 'trial-hud-history--collapsed'}`}
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <div className="trial-hud-history-header">
-              {!isHistoryOpen && (
-                <span className="trial-hud-history-title">{HUD_STRINGS.history.title}</span>
-              )}
-              <button
-                type="button"
-                className="trial-hud-toggle"
-                onClick={() => setIsHistoryOpen((open) => !open)}
-                aria-label={isHistoryOpen ? 'Collapse history' : 'Expand history'}
-                aria-expanded={isHistoryOpen}
-              >
-                {isHistoryOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-              </button>
-            </div>
-
-            {isHistoryOpen && (
-              <div className="trial-hud-history-list">
-                {historyEntries.map((item) => {
-                  if (item.side === 'system') {
-                    return (
-                      <div key={item.id} className="trial-hud-history-item trial-hud-history-item--system">
-                        <span className="trial-hud-history-text">{item.text}</span>
-                      </div>
-                    )
-                  }
-                  return (
-                    <div key={item.id} className={`trial-hud-history-item trial-hud-history-item--${item.side}`}>
-                      <span
-                        className={`trial-hud-history-tag trial-hud-history-tag--${item.side}`}
-                      >
-                        {HUD_STRINGS.speaker[item.side]}
-                      </span>
-                      <span className="trial-hud-history-text">{item.text}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
         <div
           className="trial-hud-card"
           onClick={(e) => e.stopPropagation()}
@@ -213,6 +158,15 @@ export function TrialHUD() {
                   <ShieldX size={16} />
                   {HUD_STRINGS.ruling.overrule}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {showGavelCue && (
+            <div className="trial-hud-verdict">
+              <div className="trial-hud-verdict-prompt trial-hud-verdict-prompt--gavel">
+                <Gavel size={16} />
+                {HUD_STRINGS.verdict.gavelCue}
               </div>
             </div>
           )}

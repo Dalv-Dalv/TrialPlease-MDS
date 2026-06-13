@@ -66,6 +66,7 @@ export const Gavel = forwardRef<GavelHandle, GavelProps>(({ nodes, materials }, 
     const { caseInfo } = useCaseGenerator()
     const phase = useFlow((s) => s.phase)
     const gavelStrikeTick = useFlow((s) => s.gavelStrikeTick)
+    const awaitingUser = useFlow((s) => s.awaitingUser)
 
     useEffect(() => {
         if (gavelStrikeTick > 0) triggerStrike()
@@ -73,13 +74,17 @@ export const Gavel = forwardRef<GavelHandle, GavelProps>(({ nodes, materials }, 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gavelStrikeTick])
 
-    /** Click on the gavel itself: if we're pre-trial with a case loaded, start
-     *  the trial (which bumps the tick → the effect above animates). Otherwise
-     *  just animate locally as visual feedback. */
+    /** Click on the gavel itself:
+     *  - pre_trial + caseInfo loaded → start the trial.
+     *  - awaiting the final gavel → reveal the verdict choices.
+     *  Both go through flow actions that bump the strike tick, so the effect
+     *  above plays the animation. Other states animate locally only. */
     const onGavelClick = (e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation()
         if (phase === 'pre_trial' && caseInfo) {
             useFlow.getState().startTrial(caseInfo)
+        } else if (awaitingUser === 'final_gavel') {
+            useFlow.getState().confirmVerdictGavel()
         } else {
             triggerStrike()
         }

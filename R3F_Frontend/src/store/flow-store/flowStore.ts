@@ -162,12 +162,19 @@ function beginThinking(side: Side) {
   useLawyers.getState().setThinking(side, true)
 }
 
-/** Commit a freshly-spoken utterance: clear thinking, store text, push to
- *  the recent-speech ring buffer for the HUD. */
-function commitSpeech(side: Side, text: string) {
-  const id = newId()
+/** Display a freshly-spoken utterance in the lawyer's bubble without recording
+ *  it in the HUD's history buffer. Used for evidence_argument turns since
+ *  those live in the CaseFile evidence page, not in the HUD history. */
+function displaySpeech(side: Side, text: string) {
   useLawyers.getState().setThinking(side, false)
   useLawyers.getState().setUtterance(side, text)
+}
+
+/** Commit a freshly-spoken utterance: display it AND push to the recent-speech
+ *  ring buffer so it appears in the HUD history. Used for openings/closings. */
+function commitSpeech(side: Side, text: string) {
+  const id = newId()
+  displaySpeech(side, text)
   useFlow.setState((s) => ({
     recentSpeech: [...s.recentSpeech, { id, side, text }].slice(-RECENT_SPEECH_MAX),
   }))
@@ -252,7 +259,7 @@ function computeNextState(flow: FlowState, totalEvidenceItems: number): Partial<
     } else if (next === 'closing_defense') patch.activeSpeaker = 'defense'
     else if (next === 'verdict') {
       patch.activeSpeaker = 'judge'
-      patch.awaitingUser = 'verdict'
+      patch.awaitingUser = 'final_gavel'
     } else if (next === 'concluded') patch.activeSpeaker = null
 
   } else if (flow.phase === 'evidence_debate') {
@@ -411,8 +418,14 @@ export const useFlow = create<FlowState>((set, get) => ({
       }
 
       const text = response.text ?? ''
-      if (text) commitSpeech(speaker, text)
-      else endThinking(speaker)
+      if (text) {
+        // Evidence arguments belong to the CaseFile evidence page — display
+        // the live bubble but skip the HUD history buffer.
+        if (currentFlow.phase === 'evidence_debate') displaySpeech(speaker, text)
+        else commitSpeech(speaker, text)
+      } else {
+        endThinking(speaker)
+      }
 
       // ── Append action (Phase/Speaker transition deferred to next turn) ──
       if (currentFlow.phase === 'opening_prosecution' || currentFlow.phase === 'opening_defense') {
@@ -486,8 +499,14 @@ export const useFlow = create<FlowState>((set, get) => ({
       ruling: 'sustained',
       objectionId: pending.actionId,
     }
+    const historyEntry = {
+      id: newId(),
+      side: 'system' as const,
+      text: `OBJECTION SUSTAINED — called by ${pending.side === 'prosecution' ? 'Prosecution' : 'Defense'} (${pending.reason})`,
+    }
     set((s) => ({
       transcript: [...s.transcript, ruling],
+      recentSpeech: [...s.recentSpeech, historyEntry].slice(-RECENT_SPEECH_MAX),
       pendingObjection: null,
       awaitingUser: null,
     }))
@@ -503,11 +522,29 @@ export const useFlow = create<FlowState>((set, get) => ({
       ruling: 'overruled',
       objectionId: pending.actionId,
     }
+    const historyEntry = {
+      id: newId(),
+      side: 'system' as const,
+      text: `OBJECTION OVERRULED — called by ${pending.side === 'prosecution' ? 'Prosecution' : 'Defense'} (${pending.reason})`,
+    }
     set((s) => ({
       transcript: [...s.transcript, ruling],
+      recentSpeech: [...s.recentSpeech, historyEntry].slice(-RECENT_SPEECH_MAX),
       pendingObjection: null,
       awaitingUser: null,
     }))
+  },
+
+  /** Called when the user strikes the gavel during the final-gavel prompt.
+   *  Bumps the strike tick (the Gavel watches it and animates) and reveals
+   *  the verdict choices by flipping awaitingUser to 'verdict'. */
+  confirmVerdictGavel: () => {
+    const flow = get()
+    if (flow.awaitingUser !== 'final_gavel') return
+    set({
+      awaitingUser: 'verdict',
+      gavelStrikeTick: flow.gavelStrikeTick + 1,
+    })
   },
 
   deliverVerdict: async (verdict) => {
@@ -559,7 +596,7 @@ export const useFlow = create<FlowState>((set, get) => ({
     } else if (next === 'closing_defense') patch.activeSpeaker = 'defense'
     else if (next === 'verdict') {
       patch.activeSpeaker = 'judge'
-      patch.awaitingUser = 'verdict'
+      patch.awaitingUser = 'final_gavel'
     } else if (next === 'concluded') patch.activeSpeaker = null
 
     set(patch)
