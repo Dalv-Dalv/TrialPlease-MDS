@@ -5,7 +5,7 @@ import json
 # Ensure Python can find the api module
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from api.ai_service import Prosecutor, DefenseAttorney, CaseArchitect, AIEvaluator
+from api.ai_service import Prosecutor, DefenseAttorney, CaseArchitect, AIEvaluator, WitnessAgent
 
 # Mock a simple case and transcript
 mock_case = {
@@ -151,12 +151,62 @@ try:
     print(json.dumps(case_evaluation, indent=2))
     
     assert isinstance(case_evaluation, dict), "Evaluation result must be a dictionary"
-    for key in ["scenario_coherence", "legal_playability", "completeness", "overall_quality", "feedback"]:
+    for key in ["case_coherence", "legal_playability", "completeness", "overall_quality", "feedback"]:
         assert key in case_evaluation, f"Missing key '{key}' in evaluation result"
         
     assert case_evaluation["overall_quality"] >= 7, f"Case generation overall quality too low: {case_evaluation['overall_quality']}/10. Feedback: {case_evaluation['feedback']}"
     print("[OK] Case generation quality is high! (Overall Quality >= 7)")
 except Exception as e:
     print(f"\n[ERROR] Error running Case Generation: {e}")
+    import traceback
+    traceback.print_exc()
+
+print("\n\n=============================")
+print("[TEST] TESTING WITNESS AI")
+print("=============================")
+
+try:
+    if 'generated_case' in locals() and generated_case.get("witnesses"):
+        witness_data = generated_case["witnesses"][0]
+        witness_agent = WitnessAgent()
+        
+        lawyer_question = "Where were you at the time of the event? Can you explain the flour trail?"
+        
+        # Test witness response
+        witness_reply = witness_agent.get_reply(
+            case_json=generated_case,
+            witness_data=witness_data,
+            lawyer_question=lawyer_question,
+            spoken_statements=mock_transcript
+        )
+        
+        print("\n[WITNESS RESPONSE]:")
+        print(json.dumps(witness_reply, indent=2))
+        
+        assert isinstance(witness_reply, dict), "Witness reply must be a JSON dictionary"
+        assert "dialogue" in witness_reply, "Missing 'dialogue' key in witness reply"
+        print("[OK] Witness JSON structure is valid!")
+        
+        evaluator = AIEvaluator()
+        print("\n[EVALUATING WITNESS RESPONSE QUALITY...]")
+        witness_evaluation = evaluator.evaluate_witness_reply(
+            case_json=generated_case,
+            witness_data=witness_data,
+            lawyer_question=lawyer_question,
+            spoken_statements=mock_transcript,
+            reply=witness_reply
+        )
+        print("[WITNESS EVALUATION]:")
+        print(json.dumps(witness_evaluation, indent=2))
+        
+        assert isinstance(witness_evaluation, dict), "Evaluation result must be a dictionary"
+        for key in ["role_adherence", "coherence", "relevance", "reveal_control", "overall_quality", "feedback"]:
+            assert key in witness_evaluation, f"Missing key '{key}' in evaluation result"
+        assert witness_evaluation["overall_quality"] >= 7, f"Witness overall quality too low: {witness_evaluation['overall_quality']}/10. Feedback: {witness_evaluation['feedback']}"
+        print("[OK] Witness reply quality is high! (Overall Quality >= 7)")
+    else:
+        print("[SKIP] No generated case/witness available to test Witness AI.")
+except Exception as e:
+    print(f"\n[ERROR] Error running Witness: {e}")
     import traceback
     traceback.print_exc()
