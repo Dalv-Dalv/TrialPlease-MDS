@@ -98,9 +98,24 @@ class CaseArchitect(GeminiAgent):
   """Responsible for generating the courtroom simulation case."""
   
   def generate_case(self) -> dict:
+    import os
+    map_path = os.path.join(os.path.dirname(__file__), 'evidence_images_map.json')
+    try:
+        with open(map_path, 'r', encoding='utf-8') as f:
+            evidence_map = f.read()
+    except Exception:
+        evidence_map = "{}"
+
     prompt = '''You are a professional paralegal and scenario architect for a courtroom simulation game. Your task is to create a complex and balanced, but fun, fictional court case that allows for arguments for both the defense and the prosecution.
 The court case should be fun and interesting.
-You must generate the case details and respond STRICTLY with a valid JSON object. 
+
+Below is a JSON map of available evidence images that you can use. The map groups images by category, and each item has a "filename" and a "description" of what the image shows. 
+When creating evidence for this case, you MUST pick an appropriate image from this catalog based on the description that best fits the evidence item you are creating.
+
+AVAILABLE IMAGES CATALOG:
+''' + evidence_map + '''
+
+You must generate the case details and respond STRICTLY with a valid JSON object.
 
 The JSON structure MUST be exactly the following:
 {
@@ -111,13 +126,13 @@ The JSON structure MUST be exactly the following:
   "absolute_truth": "The hidden, absolute reality of what happened. Keep it secret from the player.",
   "defendant": "NAME: brief description of the accused person",
   "victim": "NAME: brief description of the victim/plaintiff",
-  "correct_verdict": "what is the correct verdict based on the absolute truth",
+  "correct_verdict": "what is the correct verdict based on the absolute truth, must be one of the possible choices",
   "possible_choices": [
      {"verdict_option": "Verdict Option 1", "score_points": 100},
      {"verdict_option": "Verdict Option 2", "score_points": 50}
   ],
   "evidence_items": [
-    {"name": "Evidence 1", "description": "Description"}
+    {"name": "Evidence 1", "description": "Description", "image": "image_filename_from_catalog.png"}
   ],
   "witnesses": [
     {

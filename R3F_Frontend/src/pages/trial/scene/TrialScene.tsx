@@ -98,14 +98,20 @@ export function TrialScene(props: JSX.IntrinsicElements['group']) {
 			const delay = 1000 + Math.random() * 1000;
 			timeouts.push(setTimeout(() => setRoleState('prosecution2', 'sit_to_stand'), delay));
 		} else {
-			setRoleState('prosecution2', 'stand_to_sit')
+			const currentState = useTrialSceneAnimation.getState().roleStates.prosecution2;
+			if (currentState !== 'sit' && currentState !== 'stand_to_sit') {
+				setRoleState('prosecution2', 'stand_to_sit')
+			}
 		}
 
 		if (activeSpeaker === 'defense') {
 			const delay = 1000 + Math.random() * 1000;
 			timeouts.push(setTimeout(() => setRoleState('defense2', 'sit_to_stand'), delay));
 		} else {
-			setRoleState('defense2', 'stand_to_sit')
+			const currentState = useTrialSceneAnimation.getState().roleStates.defense2;
+			if (currentState !== 'sit' && currentState !== 'stand_to_sit') {
+				setRoleState('defense2', 'stand_to_sit')
+			}
 		}
 
 		return () => {
