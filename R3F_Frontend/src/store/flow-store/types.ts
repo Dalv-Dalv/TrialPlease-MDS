@@ -89,6 +89,10 @@ export type FlowState = {
   // === prefetching ===
   prefetch: PrefetchState | null
 
+  /** Monotonic counter incremented every time the trial begins. The Gavel
+   *  watches this and triggers its strike animation when it changes. */
+  gavelStrikeTick: number
+
   // === user-callable trial control ===
   /** Run one turn for the current speaker. Statement or objection auto-routed. */
   advanceTurn: () => Promise<void>

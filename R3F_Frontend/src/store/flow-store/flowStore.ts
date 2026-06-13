@@ -28,6 +28,7 @@ const initialState = {
   debrief: null as DebriefResult | null,
   recentSpeech: [] as { id: string; side: Side; text: string }[],
   prefetch: null,
+  gavelStrikeTick: 0,
 }
 
 const RECENT_SPEECH_MAX = 8
@@ -243,11 +244,13 @@ export const useFlow = create<FlowState>((set, get) => ({
     advanceInProgress = false
     resetMockLawyerAction()
     useLawyers.getState().reset()
+    const prevTick = get().gavelStrikeTick
     set({
       ...initialState,
       caseId: caseInfo.id,
       phase: 'opening_prosecution',
       activeSpeaker: 'prosecution',
+      gavelStrikeTick: prevTick + 1,
     })
     setTimeout(() => get().advanceTurn(), 0)
   },
@@ -445,7 +448,8 @@ export const useFlow = create<FlowState>((set, get) => ({
     advanceInProgress = false
     resetMockLawyerAction()
     useLawyers.getState().reset()
-    set({ ...initialState })
+    const prevTick = get().gavelStrikeTick
+    set({ ...initialState, gavelStrikeTick: prevTick })
   },
 
   // === Internal mutations =====================================================

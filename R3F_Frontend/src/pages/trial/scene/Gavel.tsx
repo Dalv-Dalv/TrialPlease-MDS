@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import React, { useRef, useImperativeHandle, forwardRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
+import { useFlow } from '../../../store/flow-store/flowStore'
+import { useCaseGenerator } from '../../../store/case-generator-store/caseGeneratorContext'
 
 // Types for the props so it integrates seamlessly with your existing code
 interface GavelProps {
@@ -55,6 +57,33 @@ export const Gavel = forwardRef<GavelHandle, GavelProps>(({ nodes, materials }, 
     useImperativeHandle(ref, () => ({
         strike: triggerStrike
     }))
+
+    // === Flow integration ===================================================
+    // The Gavel strikes whenever the trial begins. Both the HUD "Begin Trial"
+    // button and the in-scene gavel click route through `startTrial()`, which
+    // bumps `gavelStrikeTick`. The effect below watches that tick and fires
+    // the strike animation when it changes.
+    const { caseInfo } = useCaseGenerator()
+    const phase = useFlow((s) => s.phase)
+    const gavelStrikeTick = useFlow((s) => s.gavelStrikeTick)
+
+    useEffect(() => {
+        if (gavelStrikeTick > 0) triggerStrike()
+        // triggerStrike is stable (closure over refs) — no need in deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [gavelStrikeTick])
+
+    /** Click on the gavel itself: if we're pre-trial with a case loaded, start
+     *  the trial (which bumps the tick → the effect above animates). Otherwise
+     *  just animate locally as visual feedback. */
+    const onGavelClick = (e: ThreeEvent<MouseEvent>) => {
+        e.stopPropagation()
+        if (phase === 'pre_trial' && caseInfo) {
+            useFlow.getState().startTrial(caseInfo)
+        } else {
+            triggerStrike()
+        }
+    }
 
     useFrame((_, delta) => {
         if (!animState.current.playing || !pivotGroupRef.current) return
@@ -133,7 +162,7 @@ export const Gavel = forwardRef<GavelHandle, GavelProps>(({ nodes, materials }, 
                 geometry={nodes.Gavel_StrikingPlatform.geometry}
                 material={materials.Baked_Furniture}
                 position={[-0.574, 1.209, -1.938]}
-                onClick={triggerStrike}
+                onClick={onGavelClick}
                 onPointerOver={onPointerOver}
                 onPointerOut={onPointerOut}
             />
@@ -149,7 +178,7 @@ export const Gavel = forwardRef<GavelHandle, GavelProps>(({ nodes, materials }, 
                         geometry={nodes.Gavel_Handle.geometry}
                         material={materials.DarkerWood_Shiny}
                         position={[-pivotOffset.x, -pivotOffset.y, -pivotOffset.z]}
-                        onClick={triggerStrike}
+                        onClick={onGavelClick}
                         onPointerOver={onPointerOver}
                         onPointerOut={onPointerOut}
                     >
