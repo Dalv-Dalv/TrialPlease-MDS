@@ -4,7 +4,14 @@ import random
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-
+from pydantic import BaseModel
+class EvaluationSchema(BaseModel):
+    role_adherence: int
+    coherence: int
+    relevance: int
+    argument_quality: int
+    overall_quality: int
+    feedback: str
 class GeminiAgent:
   """Base class to handle Gemini API connections and JSON formatting."""
   def __init__(self, model: str = "gemini-2.5-flash"):
@@ -16,14 +23,18 @@ class GeminiAgent:
     self.client = genai.Client(api_key=self.api_key)
     self.model = model
 
-  def get_json_answer(self, prompt: str) -> dict:
+def get_json_answer(self, prompt: str, schema: type[BaseModel] = None) -> dict:
     """Sends the prompt to Gemini and parses the strict JSON response."""
+    
+    config_args = {"response_mime_type": "application/json"}
+    if schema:
+        config_args["response_schema"] = schema
+
     response = self.client.models.generate_content(
       model=self.model,
       contents=prompt,
-      config=types.GenerateContentConfig(response_mime_type="application/json")
+      config=types.GenerateContentConfig(**config_args)
     )
-    
     raw_text = response.text.strip()
     
     print(f"==== AI RESPONSE ({self.__class__.__name__}) ====")
@@ -246,7 +257,7 @@ Respond STRICTLY with a valid JSON object of this structure:
   "feedback": "detailed feedback text"
 }}
 """
-        return self.get_json_answer(prompt)
+        return self.get_json_answer(prompt,schema=EvaluationSchema)
 
     def evaluate_case_generation(self, generated_case: dict) -> dict:
         """Evaluates the quality of a generated courtroom case."""
@@ -271,4 +282,4 @@ Respond STRICTLY with a valid JSON object of this structure:
 Generated Case:
 {json.dumps(generated_case)}
 """
-        return self.get_json_answer(prompt)
+        return self.get_json_answer(prompt,schema=EvaluationSchema)
