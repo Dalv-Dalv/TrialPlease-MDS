@@ -1,3 +1,4 @@
+from random import Random
 import os
 import json
 import random
@@ -126,7 +127,7 @@ The JSON structure MUST be exactly the following:
   "absolute_truth": "The hidden, absolute reality of what happened. Keep it secret from the player.",
   "defendant": "NAME: brief description of the accused person",
   "victim": "NAME: brief description of the victim/plaintiff",
-  "correct_verdict": "what is the correct verdict based on the absolute truth, must be one of the possible choices",
+  "correct_verdict": "what is the correct verdict based on the absolute truth, must be one of the possible choices, Verdict must be a'''f"{'Guilty' if Random.choice([True, False]) == True else 'Not Guilty'} verdict " '''",
   "possible_choices": [
      {"verdict_option": "Verdict Option 1", "score_points": 100},
      {"verdict_option": "Verdict Option 2", "score_points": 50}
