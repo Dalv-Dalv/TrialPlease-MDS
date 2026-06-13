@@ -35,6 +35,7 @@ export const HUD_STRINGS = {
 
   verdict: {
     prompt: 'Select the verdict:',
+    gavelCue: 'Click on the gavel to give the final verdict',
   },
 
   start: {

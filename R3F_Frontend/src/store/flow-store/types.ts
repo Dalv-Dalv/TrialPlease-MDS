@@ -35,7 +35,7 @@ export type Phase =
   | 'verdict'
   | 'concluded'
 
-export type AwaitingUser = 'objection_ruling' | 'verdict' | null
+export type AwaitingUser = 'objection_ruling' | 'final_gavel' | 'verdict' | null
 
 /**
  * Response shape from `POST /api/cases/<id>/lawyer_action/`.
@@ -104,6 +104,9 @@ export type FlowState = {
   approveObjection: () => void
   /** User overrules the pending objection. */
   opposeObjection: () => void
+  /** User struck the gavel in response to the final-gavel prompt — reveals the
+   *  verdict choices and triggers the gavel animation. */
+  confirmVerdictGavel: () => void
 
   // === entry / exit ===
   startTrial: (caseInfo: CaseData) => void
