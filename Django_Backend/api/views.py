@@ -49,7 +49,8 @@ class CaseViewSet(viewsets.ModelViewSet):
             print("⏳ Apelăm AI-ul pentru a genera un caz nou...")
             
             # 1. Preluăm cazul generat de AI (ca dicționar)
-            ai_data = generateCase()
+            caseArhitect=CaseArchitect()
+            ai_data = caseArhitect.generate_case()
         
             # 2. Îl trecem prin Serializator ca să validăm și să salvăm în DB
             serializer = self.get_serializer(data=ai_data)
@@ -84,12 +85,13 @@ class CaseViewSet(viewsets.ModelViewSet):
         transcript = request.data.get('transcript', [])
         phase = request.data.get('phase', 'unknown')
         evidence_name = request.data.get('evidence_name', None)
-        
+        defence=DefenseAttorney()
+        prosecutor=Prosecutor()
         try:
             if lawyer_type == 'prosecutor':
-                reply = getAgentAcuserReply(case_data, transcript, confidence, phase, evidence_name)
+                reply = prosecutor.get_reply(case_data, transcript, confidence, phase, evidence_name)
             else:
-                reply = getAgentDefendentReply(case_data, transcript, confidence, phase, evidence_name)
+                reply = defence.get_reply(case_data, transcript, confidence, phase, evidence_name)
             return Response(reply, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -115,7 +117,8 @@ class CaseViewSet(viewsets.ModelViewSet):
         }
         
         try:
-            reply = getWitnessReply(serializer.data, witness_data, question, transcript)
+            withness=WitnessAgent()
+            reply = withness.get_reply(serializer.data, witness_data, question, transcript)
             return Response(reply, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -84,7 +84,7 @@ type GLTFResult = GLTF & {
 }
 
 export function TrialScene(props: JSX.IntrinsicElements['group']) {
-	const { nodes, materials } = useGLTF('/models/Final_Courtroom.glb') as unknown as GLTFResult
+	var { nodes, materials } = useGLTF('/models/Final_Courtroom.glb') as unknown as GLTFResult
 
 	const gavelRef = useRef<GavelHandle>(null)
 
@@ -115,7 +115,7 @@ export function TrialScene(props: JSX.IntrinsicElements['group']) {
 
 	// 1. Load the HDR files
 	const furnitureHdr = useLoader(EXRLoader, '/textures/Furniture_Bake_Final.exr')
-	const roomHdr = useLoader(EXRLoader, '/textures/Room_Bake_Final.exr')
+	var roomHdr = useLoader(EXRLoader, '/textures/Room_Bake_Final.exr')
 	// const furnitureHdr = useLoader(RGBELoader, '/textures/Furniture_Bake_Final.hdr')
 	// const roomHdr = useLoader(RGBELoader, '/textures/Room_Bake_Final.hdr')
 
