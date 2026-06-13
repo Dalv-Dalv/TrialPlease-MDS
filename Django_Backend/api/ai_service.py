@@ -23,60 +23,60 @@ class GeminiAgent:
     self.client = genai.Client(api_key=self.api_key)
     self.model = model
 
-def get_json_answer(self, prompt: str, schema: type[BaseModel] = None) -> dict:
-    """Sends the prompt to Gemini and parses the strict JSON response."""
-    
-    config_args = {"response_mime_type": "application/json"}
-    if schema:
-        config_args["response_schema"] = schema
+  def get_json_answer(self, prompt: str, schema: type[BaseModel] = None) -> dict:
+      """Sends the prompt to Gemini and parses the strict JSON response."""
+      
+      config_args = {"response_mime_type": "application/json"}
+      if schema:
+          config_args["response_schema"] = schema
 
-    response = self.client.models.generate_content(
-      model=self.model,
-      contents=prompt,
-      config=types.GenerateContentConfig(**config_args)
-    )
-    raw_text = response.text.strip()
-    
-    print(f"==== AI RESPONSE ({self.__class__.__name__}) ====")
-    print(raw_text)
-    print("=====================")
-    
-    # Strip markdown code blocks if any
-    if raw_text.startswith("```"):
-      first_newline = raw_text.find("\n")
-      last_backticks = raw_text.rfind("```")
-      if first_newline != -1 and last_backticks != -1:
-        raw_text = raw_text[first_newline+1:last_backticks].strip()
-        
-    try:
-      return json.loads(raw_text)
-    except json.JSONDecodeError:
-      # Attempt to repair common JSON syntax issues
-      import re
+      response = self.client.models.generate_content(
+        model=self.model,
+        contents=prompt,
+        config=types.GenerateContentConfig(**config_args)
+      )
+      raw_text = response.text.strip()
       
-      # Fix invalid backslash escapes
-      def replace_invalid(match):
-          pos = match.start()
-          sub = raw_text[pos+1 : pos+6]
-          if not sub:
-              return "\\\\"
-          first = sub[0]
-          if first in ['"', '\\', '/', 'b', 'f', 'n', 'r', 't']:
-              return "\\"
-          if first == 'u' and len(sub) >= 5 and all(c in '0-9a-fA-F' for c in sub[1:5]):
-              return "\\"
-          return "\\\\"
+      print(f"==== AI RESPONSE ({self.__class__.__name__}) ====")
+      print(raw_text)
+      print("=====================")
+      
+      # Strip markdown code blocks if any
+      if raw_text.startswith("```"):
+        first_newline = raw_text.find("\n")
+        last_backticks = raw_text.rfind("```")
+        if first_newline != -1 and last_backticks != -1:
+          raw_text = raw_text[first_newline+1:last_backticks].strip()
           
-      repaired_text = re.sub(r'\\', replace_invalid, raw_text)
-      
-      # Fix trailing commas in objects and arrays
-      repaired_text = re.sub(r',\s*([\]}])', r'\1', repaired_text)
-      
       try:
-        return json.loads(repaired_text)
-      except Exception:
-        # If repair fails, fall back to parsing the original raw text
         return json.loads(raw_text)
+      except json.JSONDecodeError:
+        # Attempt to repair common JSON syntax issues
+        import re
+        
+        # Fix invalid backslash escapes
+        def replace_invalid(match):
+            pos = match.start()
+            sub = raw_text[pos+1 : pos+6]
+            if not sub:
+                return "\\\\"
+            first = sub[0]
+            if first in ['"', '\\', '/', 'b', 'f', 'n', 'r', 't']:
+                return "\\"
+            if first == 'u' and len(sub) >= 5 and all(c in '0-9a-fA-F' for c in sub[1:5]):
+                return "\\"
+            return "\\\\"
+            
+        repaired_text = re.sub(r'\\', replace_invalid, raw_text)
+        
+        # Fix trailing commas in objects and arrays
+        repaired_text = re.sub(r',\s*([\]}])', r'\1', repaired_text)
+        
+        try:
+          return json.loads(repaired_text)
+        except Exception:
+          # If repair fails, fall back to parsing the original raw text
+          return json.loads(raw_text)
 
 
 class CaseArchitect(GeminiAgent):
