@@ -1,5 +1,25 @@
 from rest_framework import serializers
-from .models import Case, Choice, Evidence, Witness
+from django.contrib.auth.models import User
+from .models import Case, Choice, Evidence, Witness, UserCaseHistory
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email')
+
+class RegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'password')
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data.get('username'),
+            email=validated_data.get('email', ''),
+            password=validated_data.get('password')
+        )
+        return user
 
 class EvidenceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -48,3 +68,10 @@ class CaseSerializer(serializers.ModelSerializer):
             Evidence.objects.create(case=case, **evidence)
 
         return case
+
+class UserCaseHistorySerializer(serializers.ModelSerializer):
+    case = CaseSerializer(read_only=True)
+
+    class Meta:
+        model = UserCaseHistory
+        fields = ['id', 'user', 'case', 'transcript', 'verdict_given', 'is_correct', 'created_at', 'updated_at']

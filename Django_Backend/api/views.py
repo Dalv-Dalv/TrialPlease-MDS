@@ -1,11 +1,41 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 # pyrefly: ignore [missing-import]
-from rest_framework.permissions import AllowAny
-from .models import Case
-from .serializers import CaseSerializer
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
+from .models import Case, UserCaseHistory
+from .serializers import CaseSerializer, RegisterSerializer, UserSerializer, UserCaseHistorySerializer
 from .ai_service import generateCase, getAgentAcuserReply, getAgentDefendentReply, getWitnessReply
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        
+        # Generăm (sau luăm) token-ul pentru a-l returna direct
+        token, created = Token.objects.get_or_create(user=user)
+        
+        return Response({
+            "user": UserSerializer(user, context=self.get_serializer_context()).data,
+            "token": token.key
+        }, status=status.HTTP_201_CREATED)
+
+class UserProfileView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        histories = UserCaseHistory.objects.filter(user=request.user).order_by('-created_at')
+        return Response({
+            "user": UserSerializer(request.user, context={'request': request}).data,
+            "history": UserCaseHistorySerializer(histories, many=True, context={'request': request}).data
+        })
 
 class CaseViewSet(viewsets.ModelViewSet):
     queryset = Case.objects.all().order_by('-created_at')
@@ -94,8 +124,18 @@ class CaseViewSet(viewsets.ModelViewSet):
     def debrief(self, request, pk=None):
         case = self.get_object()
         user_verdict = request.data.get('verdict', '')
+        transcript = request.data.get('transcript', [])
         
         verdict_correct = (user_verdict.lower().strip() == case.correct_verdict.lower().strip())
+        
+        if request.user.is_authenticated:
+            UserCaseHistory.objects.create(
+                user=request.user,
+                case=case,
+                transcript=transcript,
+                verdict_given=user_verdict,
+                is_correct=verdict_correct
+            )
         
         return Response({
             "absolute_truth": case.absolute_truth,

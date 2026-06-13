@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Home, LogOut, Play, X } from 'lucide-react'
+import { Home, LogOut, Play, X, User } from 'lucide-react'
 import { useAuth } from '../../../../store/authContext'
 import './TrialMenu.css'
 
@@ -48,6 +48,10 @@ export function TrialMenu({ open, onClose }: Props) {
         <button type="button" className="trial-menu-item" onClick={() => navigate('/')}>
           <Home size={18} />
           Main menu
+        </button>
+        <button type="button" className="trial-menu-item" onClick={() => navigate('/profile')}>
+          <User size={18} />
+          Profile & History
         </button>
         <button
           type="button"

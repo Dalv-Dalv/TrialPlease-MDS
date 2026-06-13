@@ -112,8 +112,6 @@ async function fetchLawyerAction(
         phase,
         evidence_name: currentEvidenceName,
         transcript,
-        phase,
-        evidence_name: currentEvidenceName,
       }),
     })
     if (!res.ok) throw new Error(`lawyer_action ${res.status}`)
@@ -124,13 +122,17 @@ async function fetchLawyerAction(
   }
 }
 
-async function fetchDebrief(caseId: number, verdict: string): Promise<DebriefResult> {
+async function fetchDebrief(caseId: number, verdict: string, transcript: TrialAction[]): Promise<DebriefResult> {
   try {
     if (!caseId) throw new Error('missing caseId')
+    const token = (() => { try { const raw = localStorage.getItem('auth.user'); return raw ? JSON.parse(raw).token : null; } catch { return null; } })();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Token ${token}`;
+
     const res = await fetch(`/api/cases/${caseId}/debrief/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ verdict }),
+      headers,
+      body: JSON.stringify({ verdict, transcript }),
     })
     if (!res.ok) throw new Error(`debrief ${res.status}`)
     const raw = await res.json()
@@ -516,7 +518,7 @@ export const useFlow = create<FlowState>((set, get) => ({
       phase: 'concluded',
       activeSpeaker: null,
     }))
-    const result = await fetchDebrief(caseId, verdict)
+    const result = await fetchDebrief(caseId, verdict, get().transcript)
     set({ debrief: result })
     return result
   },

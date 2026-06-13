@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Mail, UserPlus } from 'lucide-react'
+import { ArrowRight, Mail, UserPlus, User } from 'lucide-react'
 import { useAuth } from '../../../store/authContext'
 import { AuthLayout } from '../components/AuthLayout'
 import { PasswordInput } from '../components/PasswordInput'
@@ -9,13 +9,18 @@ export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
 
-  function handleSubmit(formData: FormData) {
+  async function handleSubmit(formData: FormData) {
+    const username = String(formData.get('username') ?? '')
     const email = String(formData.get('email') ?? '')
     const password = String(formData.get('password') ?? '')
     const confirmPassword = String(formData.get('confirmPassword') ?? '')
-    if (!email || !password || password !== confirmPassword) return
-    register(email)
-    navigate('/', { replace: true })
+    if (!username || !email || !password || password !== confirmPassword) return
+    try {
+      await register(username, email, password)
+      navigate('/', { replace: true })
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Registration failed')
+    }
   }
 
   return (
@@ -25,6 +30,22 @@ export default function Register() {
       subtitle="Start exploring TrialSim in seconds"
     >
       <form action={handleSubmit} className="auth-form register-form">
+        <div className="auth-field">
+          <label className="auth-label" htmlFor="username">Username</label>
+          <div className="auth-input-wrap">
+            <User size={18} className="auth-input-icon" aria-hidden />
+            <input
+              id="username"
+              name="username"
+              type="text"
+              autoComplete="username"
+              placeholder="johndoe"
+              className="auth-input"
+              required
+            />
+          </div>
+        </div>
+
         <div className="auth-field">
           <label className="auth-label" htmlFor="email">Email</label>
           <div className="auth-input-wrap">
