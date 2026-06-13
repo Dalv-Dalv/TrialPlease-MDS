@@ -4,13 +4,15 @@ Command: npx gltfjsx@6.5.3 .\Final_Courtroom.glb --types
 */
 
 import * as THREE from 'three'
-import React, { type JSX, useLayoutEffect, useRef } from 'react' // Added useLayoutEffect
+import React, { type JSX, useLayoutEffect, useRef, useEffect } from 'react' // Added useLayoutEffect and useEffect
 import { useGLTF } from '@react-three/drei'
 import { useLoader } from '@react-three/fiber' // Added useLoader
 import { EXRLoader, RGBELoader } from 'three-stdlib' // Added RGBELoader
 import type { GLTF } from 'three-stdlib'
 import { Gavel, type GavelHandle } from './Gavel'
 import { CourtroomCharacters } from './CourtroomCharacters'
+import { useFlow } from '../../../store/flow-store/flowStore'
+import { useTrialSceneAnimation } from './useTrialSceneAnimation'
 
 type GLTFResult = GLTF & {
 	nodes: {
@@ -82,13 +84,38 @@ type GLTFResult = GLTF & {
 }
 
 export function TrialScene(props: JSX.IntrinsicElements['group']) {
-	const { nodes, materials } = useGLTF('/models/Final_Courtroom.glb') as unknown as GLTFResult
+	var { nodes, materials } = useGLTF('/models/Final_Courtroom.glb') as unknown as GLTFResult
 
 	const gavelRef = useRef<GavelHandle>(null)
 
+	const activeSpeaker = useFlow((s) => s.activeSpeaker)
+	const setRoleState = useTrialSceneAnimation((s) => s.setRoleState)
+
+	useEffect(() => {
+		const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+		if (activeSpeaker === 'prosecution') {
+			const delay = 1000 + Math.random() * 1000;
+			timeouts.push(setTimeout(() => setRoleState('prosecution2', 'sit_to_stand'), delay));
+		} else {
+			setRoleState('prosecution2', 'stand_to_sit')
+		}
+
+		if (activeSpeaker === 'defense') {
+			const delay = 1000 + Math.random() * 1000;
+			timeouts.push(setTimeout(() => setRoleState('defense2', 'sit_to_stand'), delay));
+		} else {
+			setRoleState('defense2', 'stand_to_sit')
+		}
+
+		return () => {
+			timeouts.forEach(clearTimeout);
+		};
+	}, [activeSpeaker, setRoleState])
+
 	// 1. Load the HDR files
 	const furnitureHdr = useLoader(EXRLoader, '/textures/Furniture_Bake_Final.exr')
-	const roomHdr = useLoader(EXRLoader, '/textures/Room_Bake_Final.exr')
+	var roomHdr = useLoader(EXRLoader, '/textures/Room_Bake_Final.exr')
 	// const furnitureHdr = useLoader(RGBELoader, '/textures/Furniture_Bake_Final.hdr')
 	// const roomHdr = useLoader(RGBELoader, '/textures/Room_Bake_Final.hdr')
 
@@ -145,12 +172,13 @@ export function TrialScene(props: JSX.IntrinsicElements['group']) {
 		materials.LampShade.roughness = 0.95
 
 		// LightPassthrough: Window glass?
-		materials.Window.color.set('#E0F7FA')
-		materials.Window.metalness = 0.1
-		materials.Window.roughness = 0.1
-		// If it's glass, you might also want to make it transparent:
-		materials.Window.transparent = true
-		materials.Window.opacity = 0.6
+		materials.Window.color.set('#ffc471ff')
+		materials.Window.emissive.set('#ffc471ff')
+		materials.Window.emissiveIntensity = 200.0
+		materials.Window.metalness = 0
+		materials.Window.roughness = 0.95
+		materials.Window.transparent = false
+		materials.Window.needsUpdate = true
 
 	}, [furnitureHdr, roomHdr, materials])
 
