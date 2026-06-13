@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, User as UserIcon, AlertCircle } from 'lucide-react'
+import { ArrowRight, User as UserIcon, AlertCircle, Mail } from 'lucide-react'
 import { useAuth } from '../../../store/authContext'
 import { AuthLayout } from '../components/AuthLayout'
 import { PasswordInput } from '../components/PasswordInput'
@@ -16,10 +16,11 @@ export default function Register() {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
     const username = String(form.get('username') ?? '').trim()
+    const email = String(form.get('email') ?? '').trim()
     const password = String(form.get('password') ?? '')
     const confirmPassword = String(form.get('confirmPassword') ?? '')
 
-    if (!username || !password) {
+    if (!username || !email || !password) {
       setError('Please fill in all fields.')
       return
     }
@@ -35,7 +36,7 @@ export default function Register() {
     try {
       setError(null)
       setPending(true)
-      await register(username, password)
+      await register(username, email, password)
       navigate('/', { replace: true })
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed')
@@ -77,6 +78,22 @@ export default function Register() {
               className="auth-input"
               required
               autoFocus
+            />
+          </div>
+        </div>
+
+        <div className="auth-field">
+          <label className="auth-label" htmlFor="reg-email">Email</label>
+          <div className="auth-input-wrap">
+            <Mail size={16} className="auth-input-icon" aria-hidden />
+            <input
+              id="reg-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="Enter your email…"
+              className="auth-input"
+              required
             />
           </div>
         </div>

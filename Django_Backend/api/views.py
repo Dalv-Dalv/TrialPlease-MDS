@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from .models import Case, UserCaseHistory
 from .serializers import CaseSerializer, RegisterSerializer, UserSerializer, UserCaseHistorySerializer
+from .ai_service import CaseArchitect, Prosecutor, DefenseAttorney, WitnessAgent
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
