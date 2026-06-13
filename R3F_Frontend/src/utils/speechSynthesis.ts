@@ -200,6 +200,7 @@ export function formatSSMLForUI(ssml: string): string {
 
   // Replace newlines with <br/> for UI rendering
   text = text.replace(/\n/g, '<br/>')
+
   // Remove repeating spaces
   text = text.replace(/ {2,}/g, ' ')
   // Trim leading and trailing whitespace and <br/> tags that might have been left over from stripped XML tags
