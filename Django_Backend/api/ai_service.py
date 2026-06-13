@@ -5,11 +5,26 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from pydantic import BaseModel
-class EvaluationSchema(BaseModel):
+class LawyerEvaluationSchema(BaseModel):
     role_adherence: int
     coherence: int
     relevance: int
     argument_quality: int
+    overall_quality: int
+    feedback: str
+
+class CaseEvaluationSchema(BaseModel):
+    case_coherence: int
+    legal_playability: int
+    completeness: int
+    overall_quality: int
+    feedback: str
+
+class WitnessEvaluationSchema(BaseModel):
+    role_adherence: int
+    coherence: int
+    relevance: int
+    reveal_control: int
     overall_quality: int
     feedback: str
 class GeminiAgent:
@@ -257,7 +272,7 @@ Respond STRICTLY with a valid JSON object of this structure:
   "feedback": "detailed feedback text"
 }}
 """
-        return self.get_json_answer(prompt,schema=EvaluationSchema)
+        return self.get_json_answer(prompt, schema=LawyerEvaluationSchema)
 
     def evaluate_case_generation(self, generated_case: dict) -> dict:
         """Evaluates the quality of a generated courtroom case."""
@@ -271,8 +286,8 @@ Criteria:
 5. Feedback: Detailed commentary on what was good or what could be improved.
 
 Respond STRICTLY with a valid JSON object of this structure:
-{{
-  "scenario_coherence": <score between 1 and 10>,
+{{  
+  "case_coherence": <score between 1 and 10>,
   "legal_playability": <score between 1 and 10>,
   "completeness": <score between 1 and 10>,
   "overall_quality": <score between 1 and 10>,
@@ -282,4 +297,37 @@ Respond STRICTLY with a valid JSON object of this structure:
 Generated Case:
 {json.dumps(generated_case)}
 """
-        return self.get_json_answer(prompt,schema=EvaluationSchema)
+        return self.get_json_answer(prompt, schema=CaseEvaluationSchema)
+
+    def evaluate_witness_reply(self, case_json: dict, witness_data: dict, lawyer_question: str, spoken_statements: list, reply: dict) -> dict:
+        """Evaluates a witness's reply for quality."""
+        prompt = f"""You are an expert AI quality evaluator and scenario analyst. Your task is to evaluate the quality of an AI-generated witness response in a courtroom trial.
+
+You must evaluate the response on the following criteria:
+1. Role Adherence (1-10): Did the witness speak in character and align with their persona?
+2. Coherence (1-10): Is the witness's reply clear and coherent?
+3. Relevance (1-10): Does the reply directly answer the lawyer's question?
+4. Reveal Control (1-10): Did the witness appropriately handle their hidden truth (neither spilling it too easily nor refusing to answer when pressured)?
+5. Overall Quality (1-10): Combined score.
+6. Feedback: Detailed commentary on what was good or what could be improved.
+
+Response to evaluate:
+{json.dumps(reply)}
+
+Context:
+Case Details: {json.dumps(case_json)}
+Witness Persona: {json.dumps(witness_data)}
+Lawyer's Question: {lawyer_question}
+Previous Statements: {json.dumps(spoken_statements)}
+
+Respond STRICTLY with a valid JSON object of this structure:
+{{
+  "role_adherence": <score between 1 and 10>,
+  "coherence": <score between 1 and 10>,
+  "relevance": <score between 1 and 10>,
+  "reveal_control": <score between 1 and 10>,
+  "overall_quality": <score between 1 and 10>,
+  "feedback": "detailed feedback text"
+}}
+"""
+        return self.get_json_answer(prompt, schema=WitnessEvaluationSchema)
