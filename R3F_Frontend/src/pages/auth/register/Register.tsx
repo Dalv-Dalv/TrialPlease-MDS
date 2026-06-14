@@ -4,6 +4,7 @@ import { ArrowRight, User as UserIcon, AlertCircle, Mail } from 'lucide-react'
 import { useAuth } from '../../../store/authContext'
 import { AuthLayout } from '../components/AuthLayout'
 import { PasswordInput } from '../components/PasswordInput'
+import { GoogleButton } from '../components/GoogleButton'
 import './Register.css'
 
 export default function Register() {
@@ -18,14 +19,9 @@ export default function Register() {
     const username = String(form.get('username') ?? '').trim()
     const email = String(form.get('email') ?? '').trim()
     const password = String(form.get('password') ?? '')
-    const confirmPassword = String(form.get('confirmPassword') ?? '')
 
     if (!username || !email || !password) {
       setError('Please fill in all fields.')
-      return
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.')
       return
     }
     if (password.length < 8) {
@@ -99,7 +95,6 @@ export default function Register() {
         </div>
 
         <PasswordInput name="password" label="Password" autoComplete="new-password" />
-        <PasswordInput name="confirmPassword" label="Confirm Password" autoComplete="new-password" />
 
         <button type="submit" className="auth-submit" disabled={pending} id="register-submit-btn">
           {pending ? (
@@ -109,6 +104,8 @@ export default function Register() {
           )}
         </button>
       </form>
+
+      <GoogleButton redirectTo="/" />
 
       <p className="auth-footer">
         Already registered?{' '}

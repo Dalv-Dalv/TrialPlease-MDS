@@ -13,6 +13,7 @@ export type AuthContextValue = {
   user: User | null
   isAuthenticated: boolean
   login: (username: string, password: string) => Promise<void>
+  loginWithGoogle: (credential: string) => Promise<void>
   register: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
   /** Pull the latest user info (XP etc.) from the backend. */

@@ -4,6 +4,7 @@ import { ArrowRight, User as UserIcon, AlertCircle } from 'lucide-react'
 import { useAuth } from '../../../store/authContext'
 import { AuthLayout } from '../components/AuthLayout'
 import { PasswordInput } from '../components/PasswordInput'
+import { GoogleButton } from '../components/GoogleButton'
 import './Login.css'
 
 type LocationState = { from?: { pathname: string } }
@@ -82,6 +83,8 @@ export default function Login() {
           )}
         </button>
       </form>
+
+      <GoogleButton redirectTo={redirectTo} />
 
       <p className="auth-footer">
         No account?{' '}

@@ -1,0 +1,99 @@
+/* ─── Google Button ──────────────────────────────────────────────── */
+.google-btn-outer {
+  padding: 0 1.5rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.google-btn {
+  /* Layout */
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+
+  /* Sizing */
+  padding: 0.7rem 1rem;
+  border-radius: 3px;
+
+  /* Colour — dark background with a subtle gold border to match the card */
+  background: #111620;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  color: #c4c0b4;
+
+  /* Typography */
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  /* Interaction */
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 80ms ease;
+}
+
+.google-btn:hover:not(:disabled) {
+  background: #161d2e;
+  border-color: rgba(212, 175, 55, 0.5);
+  color: #e8e4d8;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.07);
+}
+
+.google-btn:active:not(:disabled) {
+  transform: scale(0.985);
+  background: #0f1520;
+}
+
+.google-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.google-btn--loading {
+  pointer-events: none;
+}
+
+/* Google coloured logo */
+.google-btn-logo {
+  flex-shrink: 0;
+  /* drop any inherited filter so colours stay true */
+  filter: none;
+}
+
+/* ─── Spinner ─────────────────────────────────────────────────────── */
+.google-btn-spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(212, 175, 55, 0.25);
+  border-top-color: #d4af37;
+  border-radius: 50%;
+  animation: google-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes google-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Error text ─────────────────────────────────────────────────── */
+.google-btn-error {
+  margin: 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 0.85rem;
+  color: #e74c3c;
+  text-align: center;
+}
