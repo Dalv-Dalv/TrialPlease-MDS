@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./Django_Backend
+    container_name: trialplease_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Django_Backend:/app
+    # Load environment variables from the Django_Backend/api/.env file
+    env_file:
+      - ./Django_Backend/api/.env
+
+  frontend:
+    build: ./R3F_Frontend
+    container_name: trialplease_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./R3F_Frontend:/app
+      # Prevents overwriting container node_modules with local node_modules
+      - /app/node_modules
+    environment:
+      # Tell Vite to proxy API requests to the backend container instead of localhost
+      - API_BASE_URL=http://backend:8000
+    depends_on:
+      - backend

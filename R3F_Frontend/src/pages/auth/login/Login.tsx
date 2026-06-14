@@ -73,7 +73,7 @@ export default function Login() {
           </div>
         </div>
 
-        <PasswordInput name="password" label="Password" autoComplete="current-password" />
+        <PasswordInput name="password" label="Password" autoComplete="current-password" placeholder="Enter password…" />
 
         <button type="submit" className="auth-submit" disabled={pending} id="login-submit-btn">
           {pending ? (
