@@ -145,7 +145,7 @@ The JSON structure MUST be exactly the following:
   ]
 }  
 The points should be between 10 and 100, there shoud be multiple possible_choices,
-the correct_verdict must match one of the verdict_option in the possible_choices list,
+the correct_verdict must exactly match one of the verdict_option in the possible_choices list,
 the correct_verdict must be the one with the highest score points
 '''
     return self.get_json_answer(prompt)
