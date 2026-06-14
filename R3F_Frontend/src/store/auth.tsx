@@ -97,11 +97,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ username: data.user.username, token: data.token })
   }, [])
 
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    const res = await fetch('http://localhost:8000/api/auth/google/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    })
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null)
+      throw new Error(errorData?.error ?? 'Google sign-in failed')
+    }
+
+    const data = await res.json()
+    const meta = await fetchUserMeta(data.token)
+    setUser({
+      username: data.user.username,
+      token: data.token,
+      xp: meta?.xp ?? 0,
+      xp_label: meta?.xp_label,
+      xp_current_tier_min: meta?.xp_current_tier_min,
+      xp_next_tier_min: meta?.xp_next_tier_min ?? null,
+    })
+  }, [fetchUserMeta])
+
   const logout = useCallback(() => setUser(null), [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isAuthenticated: user !== null, login, register, logout, refreshUser }),
-    [user, login, register, logout, refreshUser],
+    () => ({ user, isAuthenticated: user !== null, login, loginWithGoogle, register, logout, refreshUser }),
+    [user, login, loginWithGoogle, register, logout, refreshUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
