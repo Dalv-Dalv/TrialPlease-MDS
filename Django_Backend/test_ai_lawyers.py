@@ -133,6 +133,12 @@ try:
     assert "score_points" in generated_case["possible_choices"][0], "Missing 'score_points' in possible_choices"
     
     assert isinstance(generated_case["evidence_items"], list), "'evidence_items' must be a list"
+    if len(generated_case["evidence_items"]) > 0:
+        evidence = generated_case["evidence_items"][0]
+        assert "name" in evidence, "Missing 'name' in evidence"
+        assert "description" in evidence, "Missing 'description' in evidence"
+        assert "image" in evidence, "Missing 'image' in evidence"
+
     assert isinstance(generated_case["witnesses"], list), "'witnesses' must be a list"
     
     if len(generated_case["witnesses"]) > 0:
