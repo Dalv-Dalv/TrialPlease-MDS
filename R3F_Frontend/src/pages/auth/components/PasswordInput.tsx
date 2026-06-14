@@ -6,9 +6,10 @@ type Props = {
   name: string
   label: string
   autoComplete: 'current-password' | 'new-password'
+  placeholder?: string
 }
 
-export function PasswordInput({ name, label, autoComplete }: Props) {
+export function PasswordInput({ name, label, autoComplete, placeholder }: Props) {
   const [shown, setShown] = useState(false)
   return (
     <div className="auth-field">
@@ -20,6 +21,7 @@ export function PasswordInput({ name, label, autoComplete }: Props) {
           name={name}
           type={shown ? 'text' : 'password'}
           autoComplete={autoComplete}
+          placeholder={placeholder}
           className="auth-input"
           required
         />

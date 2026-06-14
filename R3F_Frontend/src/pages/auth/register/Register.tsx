@@ -94,7 +94,7 @@ export default function Register() {
           </div>
         </div>
 
-        <PasswordInput name="password" label="Password" autoComplete="new-password" />
+        <PasswordInput name="password" label="Password" autoComplete="new-password" placeholder="Choose a password…" />
 
         <button type="submit" className="auth-submit" disabled={pending} id="register-submit-btn">
           {pending ? (
