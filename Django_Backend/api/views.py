@@ -3,17 +3,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 # pyrefly: ignore [missing-import]
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.views import APIView
 from django.contrib.auth.models import User
-from django.conf import settings
 from rest_framework.authtoken.models import Token
 from .models import Case, UserCaseHistory
 from .serializers import CaseSerializer, RegisterSerializer, UserSerializer, UserCaseHistorySerializer
 from .ai_service import CaseArchitect, Prosecutor, DefenseAttorney, WitnessAgent
-
-# Google token verification
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 
 
 class RegisterView(generics.CreateAPIView):
@@ -33,68 +27,6 @@ class RegisterView(generics.CreateAPIView):
             "user": UserSerializer(user, context=self.get_serializer_context()).data,
             "token": token.key
         }, status=status.HTTP_201_CREATED)
-
-
-class GoogleAuthView(APIView):
-    """
-    POST { "credential": "<Google ID token>" }
-    Verifies the token, gets-or-creates the Django user, and returns
-    { user, token } — same shape as RegisterView / obtain_auth_token.
-    """
-    permission_classes = (AllowAny,)
-
-    def post(self, request, *args, **kwargs):
-        credential = request.data.get('credential')
-        if not credential:
-            return Response({'error': 'Missing credential'}, status=status.HTTP_400_BAD_REQUEST)
-
-        client_id = settings.GOOGLE_OAUTH_CLIENT_ID
-        try:
-            id_info = id_token.verify_oauth2_token(
-                credential,
-                google_requests.Request(),
-                client_id,
-            )
-        except ValueError as exc:
-            return Response({'error': f'Invalid Google token: {exc}'}, status=status.HTTP_400_BAD_REQUEST)
-
-        email = id_info.get('email', '')
-        given_name = id_info.get('given_name', '')
-        family_name = id_info.get('family_name', '')
-        name = id_info.get('name', '')
-
-        if not email:
-            return Response({'error': 'Google account has no email'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Derive a username from the email local-part; ensure uniqueness
-        base_username = email.split('@')[0]
-        username = base_username
-        counter = 1
-        while User.objects.filter(username=username).exclude(email=email).exists():
-            username = f'{base_username}{counter}'
-            counter += 1
-
-        # Get or create the user — no password needed for OAuth users
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={
-                'username': username,
-                'first_name': given_name,
-                'last_name': family_name,
-            }
-        )
-
-        # If the user already exists but username slot differs, sync display name
-        if not created and (not user.first_name and given_name):
-            user.first_name = given_name
-            user.last_name = family_name
-            user.save(update_fields=['first_name', 'last_name'])
-
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({
-            'user': UserSerializer(user).data,
-            'token': token.key,
-        }, status=status.HTTP_200_OK)
 
 
 class UserProfileView(generics.RetrieveAPIView):

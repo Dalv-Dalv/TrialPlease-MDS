@@ -4,7 +4,6 @@ import { ArrowRight, User as UserIcon, AlertCircle, Mail } from 'lucide-react'
 import { useAuth } from '../../../store/authContext'
 import { AuthLayout } from '../components/AuthLayout'
 import { PasswordInput } from '../components/PasswordInput'
-import { GoogleButton } from '../components/GoogleButton'
 import './Register.css'
 
 export default function Register() {
@@ -104,8 +103,6 @@ export default function Register() {
           )}
         </button>
       </form>
-
-      <GoogleButton redirectTo="/" />
 
       <p className="auth-footer">
         Already registered?{' '}

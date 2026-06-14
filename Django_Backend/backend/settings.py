@@ -136,4 +136,3 @@ REST_FRAMEWORK = {
     ],
 }
 
-GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')
