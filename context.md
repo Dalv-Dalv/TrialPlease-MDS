@@ -97,3 +97,5 @@ When generating cases, ensure they occasionally feature:
 *   Illegally obtained evidence that objectively proves guilt (Justice vs. Law).
 *   Highly emotional victim testimony backed by weak factual evidence.
 *   Heavy, biased media pressure that conflicts with courtroom reality.
+
+Demo:[Youtube](https://youtu.be/mUM_f46XNiE)
